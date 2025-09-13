@@ -1,0 +1,208 @@
+= Multi-Step TD Algorithm =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Multi-Step Return ==
+In the beginning of training phase, MC algorithms have low bias, and high variance. One-step TD algorithms have high bias and low variance. We want to come up with an algorithm that has better bias variance trade-off. We choose a model that is between TD(0) and MC.
+
+In one-step TD, we go one step ahead in time; we consider the immediate reward stem:[r_{t+1}] and the old estimate stem:[V(s_{t+1})] to make an update to stem:[V(s)]. But we can also go multi steps ahead in time.
+
+The update step in the One-step TD algorithm is
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right] \\
+
+V(s_t) & \leftarrow V(s_t) + \alpha_t \left[ r_{t+1} + \gamma V(s_{t+1}) - V(s_t) \right] \\
+\end{align*}
+++++
+
+Here the target is stem:[r_{t+1} + \gamma V(s_{t+1})]. In the two-step TD:
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma r_{t+2} + \gamma^2 V^{\pi}(s_{t+1}) \, | \, S_t = s \right] \\
+
+V(s_t) & \leftarrow V(s_t) + \alpha_t \left[ r_{t+1} + \gamma r_{t+2} + \gamma^2 V(s_{t+2}) - V(s_t) \right] \\
+\end{align*}
+++++
+
+Here the target is stem:[r_{t+1} + \gamma r_{t+2} + \gamma^2 V(s_{t+2})]. We go two steps ahead, and then make an update to stem:[V(s)]. More generally, define the stem:[n]-step return
+
+[stem]
+++++
+G_t^{(n)} := r_{t+1} + \gamma r_{t+2} + \dots + \gamma^{n-1} r_{t+n} + \gamma^n V(s_{t+n})
+++++
+
+Then, stem:[n-] step TD is
+
+[stem]
+++++
+V(s_t) \leftarrow V(s_t) + \alpha_t \left[ G_t^{(n)} - V(s_t) \right] \\
+++++
+
+Here the target is stem:[G_t^{(n)}].
+
+.Multi-step TD for different values of stem:[n]. Spectrum of model free prediction methods.
+image::.\images\multi_step_td_01.png[align='center', 400, 300]
+
+The circles represent states, rectangles represent actions, and the red box is the terminal state. Multi-step TD methods tend to have less bias compared to one-step TD method.
+
+== stem:[\lambda] Return ==
+Why to pick a best stem:[n]? What if we average some or all the stem:[n-] step returns? The target could be the average of one-step TD and 3-step TD: stem:[\frac{1}{2} G_t^{(1)} + \frac{1}{2} G_t^{(3)}].
+
+.Average of two potential targets
+image::.\images\multi_step_td_02.png[align='center', 100, 100]
+
+Any set of returns stem:[\{G_t^{(1)}, G_t^{(2)}, \dots\}] can be averaged, even an infinite set, as long as the weights on the component returns are positive and sum to 1. Choose a hyperparameter stem:[\lambda \in [0,1\]], and define the stem:[\lambda]-return at time stem:[t] as
+
+[stem]
+++++
+G_t^{\lambda} := (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} G_t^{(n)}
+++++
+
+which is a geometrically weighted average of all stem:[n-] step returns. The weights stem:[(1-\lambda) \lambda^{n-1}] form a (geometric) probability distribution over stem:[n=1,2,\dots].
+
+[stem]
+++++
+\sum_{n=1}^\infty (1-\lambda) \lambda^{n-1} =1
+++++
+
+A weight of stem:[(1-\lambda)] is given to stem:[G_t^{(1)}], stem:[\lambda (1-\lambda)] to stem:[G_t^{(2)}], stem:[\lambda^2 (1-\lambda)] to stem:[G_t^{(3)}, \dots], and stem:[\lambda^{n-1} (1-\lambda)] to stem:[G_t^{(n)}].The TD(stem:[\lambda]) algorithm uses stem:[\lambda]- return as the target.
+
+[stem]
+++++
+V(s_t) \leftarrow V(s_t) + \alpha_t [G_t^{\lambda} - V(s_t)]
+++++
+
+* Larger stem:[\lambda]: puts more weight on longer returns (closer to MC).
++
+As  stem:[\lambda \to 1], all the weights will be on large stem:[G_t^{(n)}]. In the limit, the weight shifts entirely to the infinite-horizon return stem:[G_t] (the Monte Carlo return). stem:[\lim_{\lambda \to 1} G_t^{\lambda} = G_t].
+
+* Smaller stem:[\lambda]: puts more weight on shorter returns (closer to TD(0)).
++
+stem:[\lambda=0]: This gives stem:[G_t^{\lambda} = G_t^{(1)}], which is just the 1-step TD (also known as TD(0)) target.
+
+*For a finite horizon setting (episodic tasks):*
+
+Suppose the episode ends at time stem:[T]. Then the maximum number of steps after stem:[t] is stem:[N=T-t]. So, only stem:[n=1,2,\dots, N] are valid. In this case, the stem:[N-] step return stem:[G_t^{(N)}] is the Monte Carlo return stem:[G_t]. Moreover, for all stem:[n > N] the stem:[n-] step return equals the full return
+
+[stem]
+++++
+G_t^{(n)} = G_t^{(N)} = G_t \,\, \text{ for } n \geq N
+++++
+
+image::.\images\multi_step_td_03.png[align='center', 600,400]
+
+== Problem with stem:[G_t^{\lambda} ] Target ==
+With stem:[G_t^{(n)}] target, we have to move stem:[n] steps ahead in time to make an update to stem:[V(s)]. This holds true even for stem:[G_t^{\lambda} ] target. We don't update the value of a state as soon as we reach the successor state, that is, it is not suitable for online learning (implementation). A possible way to do online implementation is
+
+*Forward View TD(stem:[\lambda]):*
+
+[stem]
+++++
+\begin{align*}
+G_t^{\lambda} - V(s_t) & = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \left[ G_t^{(n)} - V(s_t) \right] \\
+& = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \delta_t^{(n)}
+\end{align*}
+++++
+
+Here stem:[\delta_t^{(n)} = G_t^{(n)} - V(s_t)] is the stem:[n-] step TD error at time stem:[t]. With this formulation, we can consider each term in the summation as an individual entity. We can then update in the following fashion:
+
+.Online implementation of multistep TD
+image::.\images\multi_step_td_04.png[align='center', 400,300]
+
+The update term stem:[G_t^{\lambda} - V(s_t)] is a summation of quantities from stem:[n=1] to stem:[n=\infty]. Instead of making the update all at once, we can make it in bits and pieces.
+
+Once we know stem:[r_{t+1}] and when we are in stem:[s_{t+1}], we can calculate the one-step TD error with respect to stem:[s_t]. We make an update to stem:[V(s_t)] as soon as we calculate the one-step TD error. Once we move to stem:[s_{t+2}], we can calculate the two-step TD error with respect to stem:[s_t]. We make an update again to stem:[V(s_t)] at this step. And the process continues. But it requires storing all the rewards stem:[r_{t+1}, r_{t+2}, \dots] as we go along the trajectory. Another problem is that as soon as we reach stem:[s_{t+2}] we should also make a one-step update to stem:[s_{t+1}] (along with a two-step update to stem:[s_t]). This becomes a bit tricky and difficult to implement.
+
+image::.\images\multi_step_td_05.png[align='center', 400,300]
+
+*Backward View TD(stem:[\lambda]):*
+
+This can be improvised by rearranging the stem:[n-] step TD error as follows by establishing a relationship between stem:[n-] step TD error and one-step TD error.
+
+[stem]
+++++
+\begin{align*}
+\delta_t^{(n)} & = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots + \gamma^{n-1} r_{t+n} + \gamma^n V(s_{t+n}) - V(s_t) \\
+
+& =  \gamma^0 [ r_{t+1} + \gamma V(s_{t+1}) - V(s_t)] \\
+& \hspace{1cm} + \gamma^1 [ r_{t+2} + \gamma V(s_{t+2}) - V(s_{t+1})] \\ 
+& \hspace{1cm} + \dots \\ 
+& \hspace{1cm} + \gamma^{n-1} [ r_{t+n} + \gamma V(s_{t+n}) - V(s_{t+n-1})] \\
+
+& = \sum_{i=t}^{t+n-1} \gamma^{i-t} \delta_i^{(1)}
+
+\end{align*}
+++++
+
+The terms in the second equation are one-step TD errors evaluated at stem:[t, t+1, \dots, t+n-1].
+
+[stem]
+++++
+\begin{align*}
+G_t^{\lambda} - V(s_t)
+& = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \delta_t^{(n)} \\
+
+& = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \sum_{i=t}^{t+n-1} \gamma^{i-t} \delta_i^{(1)} \\
+
+& = \sum_{i=0}^\infty (\lambda \gamma)^i \delta_{t+i}^{(1)} \\
+
+& = \delta_t^{(1)} + (\lambda \gamma) \delta_{t+1}^{(1)} + + (\lambda \gamma)^2 \delta_{t+2}^{(1)} + (\lambda \gamma)^3 \delta_{t+3}^{(1)} + \dots
+
+\end{align*}
+++++
+
+With this formulation
+
+* As we move from stem:[s_t] to stem:[s_{t+1}], we make an update to stem:[V(s_t)] with the one-step TD error stem:[\delta_t^{(1)}].
+
+* As we move from stem:[s_{t+1}] to stem:[s_{t+2}], we calculate the one-step TD error stem:[\delta_{t+1}^{(1)}]. Then we update stem:[V(s_{t+1})] with stem:[\delta_{t+1}^{(1)}], and stem:[V(s_t)] also with the same error but weighed by stem:[\lambda \gamma], stem:[(\lambda \gamma) \delta_{t+1}^{(1)}].
+
+* Similarly, as we move from stem:[s_{t+2}] to stem:[s_{t+3}], we update all the past states in the following fashion
+
+image::.\images\multi_step_td_06.png[align='center', 400,300]
+
+This method requires us to store only the current one-step TD error at any time step stem:[t]. Using this, we make that piece of update to all the past states. This helps us with making the updates online (online implementation). This method can be implemented even more efficiently by a notion called eligibility traces.
+
+=== Eligibility Traces ===
+The eligibility trace of a state stem:[s \in \mathcal{S}] at time stem:[t] is defined recursively by
+
+[stem]
+++++
+\begin{align*}
+e_0(s) & = 0 \\
+
+e_t(s) & = \begin{cases}
+(\lambda \gamma) e_{t-1}(s), & s_t \ne s \\
+(\lambda \gamma) e_{t-1}(s) + 1, & s_t = s \\
+\end{cases}
+
+\end{align*}
+++++
+
+* If we don't see the state stem:[s] at time stem:[t], then the current eligibility trace of stem:[s] is the previous eligibility trace stem:[* (\lambda \gamma)].
+* If we see the state stem:[s] at time stem:[t], then the current eligibility trace of stem:[s] is the previous eligibility trace stem:[* (\lambda \gamma) + 1].
+
+image::.\images\eligibility_trace.png[align='center', 400,200]
+
+Vertical lines below the x-axis indicate the time indices at which we saw the state stem:[s]. At every time instance where we don't see the state, the current value is multiplied by stem:[(\lambda \gamma)]. So, it decays in the interval where we don't see the state.
+
+== TD(stem:[\lambda]) Algorithm ==
+An efficient way to implement TD(stem:[\lambda]) and make updates online, This algorithm is used to evaluate the value of a given policy stem:[\pi].
+
+image::.\images\td_lambda_algo.png[align='left', 600,400]
+
+* Step 8: As we have seen the state stem:[s], we increment its eligibility trace by 1.
+* Step 10: We update the value of all states. If a state is not seen so far, its eligibility trace will be 0 which makes the second term 0. Hence, no update happens to the value of that state.
+* Step 11: We update the eligibility trace of all states.
+
+If stem:[\lambda=0], this simplifies to stem:[TD(0)] algorithm (the one-step TD algorithm).
+
+
+

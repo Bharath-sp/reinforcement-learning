@@ -1,0 +1,91 @@
+= Markov Decision Process =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Definition ==
+Markov Decision Process (MDP) provides a mathematical framework for modeling sequential decision making processes. It helps us formally describe the working of the environment and agent in the RL setting. It can handle huge variety of problems: Multi-arm bandits (Single state MDPs) and optimal control (Continuous MDPs).
+
+The goal in solving an MDP is to find an 'optimal' policy (or behaviour) for the decision maker (agent) in order to maximize the total future reward.
+
+Markov decision process is a tuple stem:[<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma>] where
+
+* stem:[\mathcal{S}]: (Finite) set of states
+* stem:[\mathcal{A}]: (Finite) set of actions
+* stem:[\mathcal{P}]: State transition probability
++
+[stem]
+++++
+\mathcal{P}^a_{ss'} = \mathbb{P}(S_{t+1} = s' \, | \, S_t = s_t, A_t = a_t), \,\, a_t \in \mathcal{A}
+++++
++
+Here the probabilities are conditional on two variables. The probability of stem:[S_{t+1} = s'] depends on the current state as well as the action that we take. stem:[\mathcal{P}^a_{ss'}] represents the probability of reaching stem:[s'] from stem:[s] having taken action stem:[a] at state stem:[s].
+
+* stem:[\mathcal{R}]: Reward for taking action stem:[a_t] at state stem:[s_t] and transitioning to state stem:[s_{t+1}] is given by the function stem:[\mathcal{R}]
++
+[stem]
+++++
+r_{t+1} = \mathcal{R}(s_t, a_t, s_{t+1})
+++++
++
+Reward is a function of these three variables in MDP. Note: The reward function can still be a stochastic function. It is not that for a given stem:[s_t, a_t, s_{t+1}] the reward given is always the same.
+
+* stem:[\gamma]: Discount factor stem:[\gamma \in [0,1\]]
+
+We start at a state stem:[s_0], take an action stem:[a_0], go to state stem:[s_1]; in the process we get a reward of stem:[r_1]. This cycle continues until we reach the goal state (or) the terminal time. In the infinite horizon setting, the cycle continues without an end.
+
+.Flow in the Markov Decision Process
+image::.\images\mdp_01.png[align='center',500, 200]
+
+*Example 01: Navigation Problem:*
+
+The following is similar to the snakes and ladders game, but we make a decision here. Being at state 2, we can move either left or right. The grey boxes are the goal states.
+
+.Navigation Problem
+image::.\images\mdp_nav_prob.png[align='center',200, 200]
+
+* States stem:[\mathcal{S}]: 1 to 14 (non-terminal) and two terminal states (shaded)
+* Actions stem:[\mathcal{A}]: Any of the four directions possible
+* Reward stem:[\mathcal{R}]: -1 for every move made until reaching goal state. Here the reward is not just associated with states. It also depends on our action.
+
+The objective is to reach any of the goal states in as few moves as possible.
+
+*Example 02: Atari Games: Ping Pong*
+
+.Atari Game
+image::.\images\mdp_atari_games.png[align='center',300, 200]
+
+* States stem:[\mathcal{S}]: A set of images. We cannot identify the motion of the ball with a single image. So, we must consider at least two consecutive images. The two images together represent a state. The states still satisfy the Markov property, because it doesn't matter how the ball came to that position. We take a set of images just to track the motion of the ball.
+* Actions stem:[\mathcal{A}]: Move the paddle up or down
+* Reward stem:[\mathcal{R}]: +1 for making the opponent miss the ball; -1 if the opponent miss the ball; 0 otherwise.
+
+== Windy Grid World: Stochastic Environment ==
+Recall given an MDP stem:[<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma>], the state transition probability stem:[\mathcal{P}] defined as
+
+[stem]
+++++
+\mathcal{P}^a_{ss'} = \mathbb{P}(S_{t+1} = s' \, | \, S_t = s_t, A_t = a_t), \,\, a_t \in \mathcal{A}
+++++
+
+In general, even after choosing action stem:[a_t] at state stem:[s_t] (as prescribed by the policy), the next state stem:[s'] doesn't need to be a fixed state.
+
+Consider the following grid world example. The starting state is stem:[S], and the goal is to reach stem:[G]. The agent can move left, right, up, or down. On the x-axis, we have the magnitude of wind that is blown.
+
+.Windy Grid World
+image::.\images\mdp_windy_nav_prob.png[align='center',400, 200]
+
+Assume we are at the end of the bottom arrow, we take an action to move right. Because of the wind, the mechanics of the system may not allow us to do that; it may push us upward. In this case, we say that the environment is stochastic.
+
+If the state we get into having taken an action at state stem:[s] is fixed, then we say that the environment is deterministic; else stochastic.
+
+== Terminologies ==
+In the MDP flow above,
+
+* If stem:[T] is fixed and finite, the resultant MDP is a finite horizon MDP. Example: Wealth management problem for 12 months. Each trajectory in such MDP will end at stem:[T] time steps. For these MDPs, we can use stem:[\gamma = 1].
+
+* If stem:[T] is infinite, the resultant MDP is infinite horizon MDP. Example: Certain Atari games.
+
+* In example 01 (navigation problem), some trajectories may end in fewer steps, and some trajectories may take more steps. So, stem:[T] is not fixed; it is a random variable. Such MDPs are neither finite nor infinite; they are indefinite MDPs or stochastic shortest path MDPs. Even for these MDPs, we can use stem:[\gamma = 1].
+
+When stem:[| \mathcal{S} |] is finite i.e., when the number of states is finite, the MDP is called finite state MDP.

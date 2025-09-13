@@ -1,0 +1,191 @@
+= Temporal Difference Methods =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+For a given MDP problem and a policy, without the knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}] (model free), we try to find stem:[V^{\pi}(s)] (prediction). It is known that the value of stem:[s] under the policy stem:[\pi] is 
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & := \mathbb{E}_{\pi} \left( G_t \, | \, S_t = s\right) = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s \right) \\
+
+& = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right]
+\end{align*}
+++++
+
+The decomposition assumes that the underlying stochastic sequence satisfies the Markov property.
+
+To evaluate stem:[V^{\pi}], we can estimate any of the above two expectations using samples.
+
+* If we use the first formula to estimate the expectation, then it is called a Monte Carlo method.
+* If we use the second formula to estimate the expectation, then it is called a Temporal Difference method.
+
+== Temporal Difference ==
+Estimate expectation from experience (with samples) using the recursive decomposition formulation of the value function.
+
+[stem]
+++++
+V^{\pi}(s) := \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right]
+++++
+
+We begin by initializing stem:[V(s) = 0 ; \forall s \in \mathcal{S}], which serves as the initial estimate for all states, including stem:[V(s_{t+1})]. Combining this estimate with the observed reward stem:[r_{t+1}] yields one sample of stem:[G_t]. By repeating this process - we obtain several such samples, which can then be used to form an updated estimate of stem:[V^{\pi}(s)].
+
+*Incremental Calculation of Mean:*
+
+Suppose we want to compute the mean of stem:[k+1] numbers. The mean of stem:[k+1] numbers is
+
+[stem]
+++++
+\begin{align*}
+\mu_{k+1} & := \frac{1}{k+1} \sum_{i=1}^{k+1} x_i \\
+& = \frac{1}{k+1} \sum_{i=1}^{k} x_i + \frac{1}{k+1} x_{k+1} \\
+& = \frac{k}{k+1} \left( \frac{1}{k} \sum_{i=1}^{k} x_i \right) + \frac{1}{k+1} x_{k+1} \\
+& = \frac{k}{k+1} \mu_k + \frac{1}{k+1} x_{k+1} \\
+& = \mu_k + \frac{1}{k+1} (x_{k+1} - \mu_k)
+\end{align*}
+++++
+
+The mean of the stem:[k+1] numbers can be written as correction to the mean of the stem:[k] numbers. This way, we don't have to store all the stem:[k+1] numbers to compute the mean. We can store a single value (the old mean), and update it as soon as we get a new number. 
+
+The first term stem:[\mu_k] is the mean of the stem:[k] numbers, and the second term is some correction. Here we are updating the old mean to get a new value of the mean. The general form for the update rule that is present in the incremental calculation is
+
+[stem]
+++++
+\text{New Estimate} \leftarrow \text{Old Estimate} + \text{Learning Rate(Target - Old estimate)}
+++++
+
+* The expression stem:[\text{(Target - Old estimate)}] is an error of the estimate.
+* The error is reduced by taking steps towards the target.
+* The target is presumed to indicate a desirable direction to move. In the incremental calculation of mean, the term stem:[x_{k+1}] is the target.
+
+== One-Step TD ==
+We wish to approximate
+
+[stem]
+++++
+V^{\pi}(s) = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right]
+++++
+
+Approximate the expectation by a sample mean:
+
+At time stem:[t], suppose we are in state stem:[s_t]. We take an action stem:[a_t] as per the policy stem:[\pi], get a reward of stem:[r_{t+1}], and move to next state stem:[s_{t+1}]. As soon as we see this transition stem:[(s_t, r_{t+1}, s_{t+1})], we can make an update to stem:[V(s_t)].
+
+[stem]
+++++
+V(s_t) \leftarrow V(s_t) + \alpha_t \left[ r_{t+1} + \gamma V(s_{t+1}) - V(s_t) \right]
+++++
+
+NOTE: Here stem:[r_{t+1} + \gamma V(s_{t+1})] is the target that we want to estimate.
+
+To make an update to stem:[V(s_t)], we don't have to wait for the episode to get over. As soon as we go to stem:[s_{t+1}], we can make an update to stem:[V(s_t)]. This way, we compute the sample mean incrementally.
+
+Samples (a sample is a realization of stem:[r_{t+1} + \gamma V(s_{t+1})]) come from different visits to the state stem:[s], either from the same or different trajectories. Here we are moving one step ahead in time to generate a sample, whereas in MC algorithms, we have to move till the end of the episode to realize a sample.
+
+=== TD vs MC Example ===
+Consider the below MDP (or MRP) with six states. stem:[S_6] is the terminal state. And suppose we are given five sample trajectories:
+
+.TD vs MC Example
+image::.\images\one_step_td_eg.png[align='center', 700, 400]
+
+Compute stem:[V(s_1)] and stem:[V(s_2)] using MC and TD methods.
+
+From stem:[S_3], we go to stem:[S_4] with 0.9 probability or to stem:[S_5] with 0.1 probability. These probability values are not given to the TD or MC algorithms. But as we know these values, we can compute the true value of each state. We know that stem:[V^{\pi}(s) = \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + V^{\pi}(s') \right)], so
+
+* stem:[V(S_6) = 0; V(S_5)= +10; V(S_4) = +1]
+* stem:[V(S_3) = 0.9 (0 + V(S_4)) + 0.1 (0 + V(S_5)) = 0.9 * V(S_4) + 0.1 * V(S_5) = 0.9 + 1 = 1.9] and stem:[V(S_1) = 2.9; V(S_2) = 3.9]
+
+Assume we do not know the transition probability matrix and rewards for all state-action transition. We have to collect samples to estimate the value of states; we cannot just enumerate all the possible paths.
+
+Using the First-visit MC:
+
+* stem:[V(S_1) = \frac{1}{4}(2 + 11 + 2 + 2) = 4.25]
+* stem:[V(S_2) = 12]
+
+In this example, no state is appearing twice. So, every-visit MC also gives the same estimate. As there is only one sample from stem:[S_2], the estimate of the value of stem:[S_2] is poorer than the estimate for stem:[S_1].
+
+Using (one-step) TD: Initialize stem:[V(s) = 0 \, \forall s \in \mathcal{S}], and assume stem:[\gamma=1].
+
+* From the first trajectory: stem:[
+S_1 \xrightarrow{ \,\, 1 \,\, } S_3 \xrightarrow{ \,\,\,0 \,\,\, } S_4 
+\xrightarrow{ \,\, 1 \,\, } S_6]
++
+stem:[V(S_1) = V_o(S_1) + \alpha (1 + V_o(S_3) - V_o(S_1)) = 0 + \alpha ( 1 + 0 - 0)]. We can make this update as soon as we see the first transition (from stem:[S_1] to stem:[S_3]) in the trajectory. In the incremental mean calculation, the learning rate is stem:[\frac{1}{k+1}], which denotes the number of terms we have considered in the mean calculation. As this is the first time we encountered and update stem:[S_1], in this case, stem:[\alpha] should be 1. So, stem:[V(S_1) = 1].
++
+Similarly, stem:[V(S_3) =0; V(S_4) = 1; V(S_6) = 0].
+
+* From the second trajectory: stem:[
+S_1 \xrightarrow{ \,\, 1 \,\, } S_3 \xrightarrow{ \,\,\,0 \,\,\, } S_5 
+\xrightarrow{ \,\, 10 \,\, } S_6
+]
++
+stem:[V(S_1) = V_o(S_1) + \alpha (1 + V_o(S_3) - V_o(S_1)) = 1 + \frac{1}{2} ( 1 + 0 - 1) =1]. Here stem:[\alpha = \frac{1}{2}] because we are seeing stem:[S_1] for the second time. Similarly, stem:[V(S_3) =0; V(S_5) = 10; V(S_6) = 0].
+
+* From the third trajectory: stem:[
+S_1 \xrightarrow{ \,\, 1 \,\, } S_3 \xrightarrow{ \,\,\,0 \,\,\, } S_4 
+\xrightarrow{ \,\, 1 \,\, } S_6
+]
++
+** stem:[V(S_1) = V_o(S_1) + \alpha (1 + V_o(S_3) - V_o(S_1)) = 1 + \frac{1}{3} ( 1 + 0 - 1) =1]
+** stem:[V(S_3) = V_o(S_3) + \alpha (0 + V_o(S_4) - V_o(S_3)) = 0 + \frac{1}{3} ( 0 + 1 - 0) = 0.33].
++
+Similarly, stem:[ V(S_4) = 1; V(S_6) = 0].
+
+* From the Fourth trajectory: stem:[
+S_1 \xrightarrow{ \,\, 1 \,\, } S_3 \xrightarrow{ \,\,\,0 \,\,\, } S_4 
+\xrightarrow{ \,\, 1 \,\, } S_6
+]
++
+** stem:[V(S_1) = V_o(S_1) + \alpha (1 + V_o(S_3) - V_o(S_1)) = 1 + 0.25 ( 1 + 0.33 - 1) =1.08]
+** stem:[V(S_3) = V_o(S_3) + \alpha (0 + V_o(S_4) - V_o(S_3)) = 0.33 + 0.25 ( 0 + 1 - 0.33) = 0.5].
++
+Similarly, stem:[ V(S_4) = 1; V(S_6) = 0].
+
+* From the Fifth trajectory: stem:[
+S_2 \xrightarrow{ \,\, 2 \,\, } S_3 \xrightarrow{ \,\,\,0 \,\,\, } S_5 \xrightarrow{ \,\, 10 \,\, } S_6]
++
+** stem:[V(S_2) = V_o(S_2) + \alpha (2 + V_o(S_3) - V_o(S_2)) = 0 + 1 ( 2 + 0.5 - 0) =2.5]
+** stem:[V(S_3) = V_o(S_3) + \alpha (0 + V_o(S_5) - V_o(S_3)) = 0.5 + 0.20 ( 0 + 10 - 0.5) = 2.4].
++
+Similarly, stem:[ V(S_5) = 10; V(S_6) = 0].
+
+=== One-Step TD: TD(0) Algorithm ===
+
+.TD(0) algorithm
+image::.\images\td_0_algo.png[align='left', 500, 300]
+
+CAUTION: TD algorithm works only when the underlying stochastic sequence satisfies Markov property because we use the Markovian assumption for the decomposition formula.
+
+*Convergence of algorithm:*
+
+For any fixed policy stem:[\pi], the TD(0) algorithm converges (asymptotically - as the sample size approaches infinity - the number of visits to each state becomes infinity) to stem:[V^{\pi}] under some conditions on the choice of the learning rate stem:[\alpha] (Robbins Monroe condition):
+
+* stem:[\sum \alpha_t = \infty], that is, it should diverge.
+* stem:[\sum \alpha_t^2 < \infty], that is, it should converge.
+
+In theory, we often consider a learning rate schedule for each state separately. In the above example, our choice of the learning rate stem:[\frac{1}{k+1}] for each state is one of the possible learning rates. This series obeys the Robbins Monroe condition. In practice, we typically consider a constant number stem:[(0,1\]] for the learning rate.
+
+Generally, TD methods have usually (empirically) been found to converge faster than MC methods on certain class of tasks.
+
+*Schematic View of algorithm:*
+
+In TD(0) algorithm, we don't traverse the full length of the tree unlike the MC methods; we just go one step ahead to make an update to stem:[V(s)]. And we don't consider the full backup: we don't look at every successor state.
+
+TD(0) algorithm:
+
+* Uses experience (samples) without model like MC
+* Bootstraps like DP: Uses an old estimate of stem:[V(s')] to get a new estimate of stem:[V(s)].
+* Suited for online learning. As we go from stem:[s] to stem:[s'], we can make an update to stem:[s]. This is referred to as online learning. In MC algorithms, we should traverse the whole trajectory to make an update to stem:[s]. MC is more suited when there are trajectories readily available. Thus, MCs are suitable for offline learning.
+
+*Connection between MC error and TD error:*
+
+* The term stem:[\delta_t = [r_{t+1} + \gamma V(s_{t+1}) - V(s_t)\]] is called the (one step) TD error at time stem:[t].
+* The term stem:[G_t - V(s_t)] is called the MC error at time stem:[t].
+* We can express one in terms of the other as follows. For a trajectory with stem:[T] time steps:
++
+[stem]
+++++
+G_t - V(s_t) = \sum_{k=0}^{T-t-1} \gamma^k \delta_{t+k}
+++++

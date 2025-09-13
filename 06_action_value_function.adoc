@@ -1,0 +1,215 @@
+= Action Value Function =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Definition ==
+Given a RL problem, we need to first cast it as an MDP. And the goal is to find the best possible sequence of actions (an optimal policy).
+
+The action-value function stem:[Q(s,a)] under policy stem:[\pi] is the expected return starting from state stem:[s] and taking action stem:[a], and then following the policy stem:[\pi] from the next state.
+
+[stem]
+++++
+Q^{\pi}(s,a) = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s, A_t = a \right)
+++++
+
+stem:[Q^{\pi}(s,a)] represents the value of taking the action stem:[a] at state stem:[s], and then following the policy stem:[\pi] from the next state.
+
+The action stem:[a] could either be the one recommended by the policy or any arbitrary action. After taking this action stem:[a], we reach the next state stem:[s']. From stem:[s'], we follow the policy stem:[\pi]. Note that in the value function stem:[V^{\pi}(s)], we follow the policy starting from state stem:[s]. Only the first action we take at stem:[s] is (or could be) different between the value function stem:[V^{\pi}(s)] and the action value function stem:[Q^{\pi}(s,a)]. But remember that both stem:[V^{\pi}(s)] and stem:[Q^{\pi}(s,a)] are summation of the current reward and the discounted future rewards.  
+
+The action-value function can similarly be decomposed as
+
+[stem]
+++++
+\begin{align*}
+Q^{\pi}(s, a) & = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma Q^{\pi}(s_{t+1}, a_{t+1})  \, | \, S_t = s, A_t = a \right) \text{   (or)} \\
+& = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma V^{\pi}(s_{t+1})  \, | \, S_t = s, A_t = a \right)
+\end{align*}
+++++
+
+On expanding the expectation
+
+[stem]
+++++
+\begin{align*}
+Q^{\pi}(s, a) & = \sum_{s'} \mathcal{P}^{a}_{ss'} \left[ \mathcal{R}_{ss'}^a + \gamma \sum_{a'} \pi(a' \, | \, s') \, Q^{\pi}(s', a') \right] \text{   (or)} \\
+& = \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right]
+\end{align*}
+++++
+
+NOTE: We don't have the term stem:[\sum_{a} \pi(a \, | \, s)] as in stem:[V^{\pi}(s)] because the action that we take at stem:[s] is given.
+
+The first term stem:[\sum_{s'} \mathcal{P}^{a}_{ss'} \mathcal{R}_{ss'}^a] is the average reward we get by taking action stem:[a] at stem:[s].
+
+=== Relationship between stem:[V^{\pi}(\cdot)] and stem:[Q^{\pi}(\cdot, \cdot)] ===
+
+Using the definitions of stem:[V^{\pi}(s)] and stem:[Q^{\pi}(s, a)], we can arrive at the following relationships.
+
+stem:[V^{\pi}(s)] in terms of stem:[Q^{\pi}(s, a)]:
+
+[stem]
+++++
+V^{\pi}(s) = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \, Q^{\pi}(s, a)
+++++
+
+Taking the first action in stem:[Q^{\pi}(s, a)] also as dictated by the policy. We take average over all possible actions prescribed by the policy stem:[\pi] at state stem:[s].
+
+stem:[Q^{\pi}(s, a)] in terms of stem:[V^{\pi}(s)]:
+
+[stem]
+++++
+Q^{\pi}(s, a) = \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right]
+++++
+
+We take an arbitrary action stem:[a] at stem:[s]. The first term represents the average reward that we get by taking action stem:[a]. And then, we follow the policy stem:[\pi] from stem:[s'].
+
+.Relationship between stem:[V^{\pi}] and stem:[Q^{\pi}]
+image::.\images\relation_q_and_v.png[align='center',200, 200]
+
+Being at state 1, we take an action stem:[a]. This action takes us to state 2 with probability 0.6, to state 3 with probability 0.4, and to other states with probability 0. Then
+
+[stem]
+++++
+Q^{\pi}(1, a) = 0.9 * 10 + 0.9 V^{\pi}(2) + 0.1 * 5 + 0.1 V^{\pi}(3)
+++++
+
+We saw that if there are more than one optimal policy, all optimal policies achieve the same value function, stem:[V^{\pi_*}(s) = V_*(s)] for all states of the MDP. Similarly, all optimal policies achieve the same action-value function, stem:[Q^{\pi_*}(s,a) = Q_*(s,a)] for all states of the MDP.
+
+NOTE:
+
+* stem:[V_*(s)] repesents the value of stem:[s] by taking the optimal policy stem:[\pi_*] starting from state stem:[s].
+* stem:[Q_*(s,a)] repesents the value of taking action stem:[a] (an arbitrary action) at stem:[s], and then following the optimal policy stem:[\pi_*] starting from the next state.
+
+== Solution to an MDP ==
+Solving an MDP means finding a policy stem:[\pi_*] as follows:
+
+[stem]
+++++
+\pi_* = \arg \max_{\pi} \left[ \mathbb{E} \left( \sum_{t=0}^\infty \gamma^t r_{t+1} \right)\right]
+++++
+
+Typically when we specify the policy without any state (thus the expectation is unconditional), it is assummed that it is from the intial state stem:[s_0].
+
+* Denote the optimal value function stem:[V^{\pi_*}(s) = V_*(s)]
+* Denote the optimal action value function stem:[Q^{\pi_*}(s, a) = Q_*(s,a)]
+
+The main goal in RL or solving an MDP means finding an optimal value function stem:[V_*] or optimal action value function stem:[Q_*] or optimal policy stem:[\pi_*] (any one of these three).
+
+== Grid World Problem ==
+Consider a stem:[4 \times 4] grid world problem
+
+.Navigation Problem
+image::.\images\mdp_nav_prob.png[align='center',200, 200]
+
+* States stem:[\mathcal{S}]: 1 to 14 (non-terminal) and two terminal states (shaded).
+* Actions stem:[\mathcal{A} : \{\text{Right, left, up, down}\}]. At any intermediary states, any of these four actions is possible.
+* stem:[\mathcal{P}]: Upon choosing an action from stem:[\mathcal{A}], state transitions are deterministic (environment is deterministic); except that the actions that would take the agent off the grid in fact leave the state unchanged. For example, from state 2, we go to state 1 with probability 1 on taking the action 'left'. The probability of going to any other state having taken this action from state 2 is 0.
+* stem:[\mathcal{R}]: Reward is -1 on all transitions until the terminal state is reached.
+
+The goal is to reach any of the goal state in as minimum moves as possible. We need to find the optimal stem:[\pi_*] for this problem, i.e., the best action that we can take at every state (a mapping from state space to action space). For instance, the optimal action at state 11 will be 'down'. There is only one optimal policy we can make at state 11.
+
+At state 10, there are two optimal actions, either down or right. Two optimal (deterministic) policies can be constructed this way. But we can construct infinite optimal policies at state 10 on considering stochastic policies. The policies can be
+
+[stem]
+++++
+\pi_*(10) = \begin{cases}
+\text{Down}, & \text{with probability } p \\
+\text{Right}, & \text{with probability } (1-p) \\
+\end{cases}
+++++
+
+All such policies are optimal at state 10.
+
+.Optimal policies for the grid world problem
+image::.\images\optimal_policies_grid.png[align='center',200, 200]
+
+At states, where there are more than one optimal action, we can take each action with any probability. This leads to infinite optimal policies at those states. All these policies will have the same stem:[V_*] and stem:[Q_*].
+
+== Finding an Optimal Policy ==
+Suppose we are given stem:[Q_*(s,a)]. Can we find an optimal policy?
+
+For a given state stem:[s] and action stem:[a], the action-value function stem:[Q_*(s,a)] gives a scalar number. At a given state stem:[s], to find the optimal action, we pick that action stem:[a] for which the action-value stem:[Q_*(s,a)] is maximum. So the optimal policy can be given by
+
+[stem]
+++++
+\pi_*(a \, | \, s) = \begin{cases}
+1 & \text{if } a = \arg \max_{a \in \mathcal{A}} Q_*(s,a) \\
+0 & \text{Otherwise }
+\end{cases}
+++++
+
+The probability of taking action stem:[a] at state stem:[s] is 1 if stem:[a = \arg \max_{a \in \mathcal{A}} Q_*(s,a)], and 0 otherwise. This helps us get the optimal action at every state stem:[s]. This gives us a optimal deterministic policy.
+
+We know from the optimal policy theorem that for every MDP, there exists at least one optimal policy stem:[\pi_*]. Corresponding to that, there exists a unique stem:[Q_*(s,a)]. Now we say that if we know stem:[Q_*(s,a)], we can always find a deterministic optimal policy. 
+
+IMPORTANT: There is always a deterministic optimal policy for any MDP (under the same conditions mentioned in the optimal policy theorem).
+
+Therefore, if we are searching for the solution to an MDP in the policy space, we can restrict our search to the set of deterministic policies.
+
+.Policy Space
+image::.\images\policy_space.png[align='center',200, 200]
+
+== Greedy Policy ==
+Say we are given an arbitrary action-value function stem:[Q^{\pi}(s,a)] (not necessarily the optimal one), we can find a greedy policy as follows
+
+[stem]
+++++
+\pi'(a \, | \, s) = \text{greedy}(Q) = \begin{cases}
+1 & \text{if } a = \arg \max_{a \in \mathcal{A}} Q^{\pi}(s,a) \\
+0 & \text{Otherwise }
+\end{cases}
+++++
+
+This policy is greedy with respect to the given stem:[Q^{\pi}(s,a)]. The policy that is greedy with respect to stem:[Q_*] is the optimal policy stem:[\pi_*(a \, | \, s)].
+
+Using the relationship between stem:[V^{\pi}] and stem:[Q^{\pi}], for a given stem:[V^{\pi}(s)], we can also define stem:[\pi'(a \, | \, s)] as follows
+
+[stem]
+++++
+\pi'(a \, | \, s) = \text{greedy}(V) = \begin{cases}
+1 & \text{if } a = \arg \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right] \right] \\
+0 & \text{Otherwise }
+\end{cases}
+++++
+
+At stem:[s], there will be an action (or actions in case of stochastic policy) recommended by the given policy stem:[\pi], but here we take that permissible action for which the quantity stem:[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right\] ] is maximum. Then, we arrive at a new (deterministic) policy stem:[\pi'] which is derived as greedy with respect to the given stem:[V^{\pi}(s)].
+
+== Relationship between stem:[V_*(\cdot)] and stem:[Q_*(\cdot, \cdot)] ==
+
+Suppose we are given stem:[Q_*(s,a), \, \forall s \in \mathcal{S}], can we find stem:[V_*(s)]?
+
+Being at stem:[s], to get stem:[V_*(s)] from stem:[Q_*(s,a)], we should take the first action also as dictated by the optimal policy stem:[\pi_*].
+
+Given stem:[Q_*(s,a)], we know that the optimal action at stem:[s] is stem:[a = \arg \max_{a \in \mathcal{A}} Q_*(s,a)]. Therefore
+
+[stem]
+++++
+V_*(s) = \max_{a \in \mathcal{A}} Q_*(s,a)
+++++
+
+On the other hand, suppose we are given stem:[V_*(s), \, \forall s \in \mathcal{S}], can we find stem:[Q_*(s,a)]?
+
+[stem]
+++++
+Q_*(s, a) = \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V_*(s') \right]
+++++
+
+== MDP + Policy is MRP ==
+Say we are given an MDP stem:[<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma >] and a policy stem:[\pi]. From the given policy, the action to take at each state is determined. So, MDP and policy will induce an MRP. The MRP is given by stem:[(\mathcal{S}, \mathcal{P}^{\pi}, \mathcal{R}^{\pi}, \gamma)] where
+
+[stem]
+++++
+\begin{align*}
+\mathcal{P}^{\pi}(s' \, | \, s) & = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \, \mathcal{P}^{a}_{ss'}  \\
+
+\mathcal{R}^{\pi}(s) & =  \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \mathcal{R}_{ss'}^a = \mathbb{E}_{\pi} \left( r_{t+1} \, | \, S_t =s \right)
+\end{align*}
+++++
+
+* stem:[\mathcal{P}^{\pi}(s' \, | \, s)] represents the probability of getting to stem:[s'] from stem:[s] under the policy stem:[\pi]. This is just a specialized transition probability matrix which is driven by policy stem:[\pi]. We get a different transition probability matrix for each given policy stem:[\pi].
+
+* stem:[\mathcal{R}^{\pi}(s)] represents the average reward that we get in state stem:[s] under the policy stem:[\pi].
+
+
+

@@ -1,0 +1,190 @@
+= Monte Carlo Methods =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+The Dynamic Programming algorithms (the value iteration and policy iteration) assume full knowledge of MDP.
+
+* Given an MDP stem:[(<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma>)] and a policy stem:[\pi], the problem of evaluating stem:[V^{\pi}(s)] is called *prediction*.
+* Given an MDP stem:[(<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma>)], the problem of evaluating the optimal value function stem:[V_*(s)] or optimal policy stem:[\pi_*] is called *control*.
+
+In general, in RL Settings, we don't have knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}] (both or either). We get to know about these two only through experience (after taking actions in certain states). The goal is still to determine the optimal sequence of actions such that the total discounted future reward is maximum. We try to find either stem:[V_*(s), Q_*(s,a)] or stem:[\pi_*].
+
+In this setting, the problem of finding the optimal policy can be broken down into two steps: Prediction and Control. The prediction problem is about finding the value of any given policy, that is, evaluate a policy in a model free setting. The control problem is about finding an optimal policy.
+
+== DP Algorithms - Closer look ==
+We know that the policy evaluation formula in the policy iteration algorithm to find the value of the policy stem:[\pi] is
+
+[stem]
+++++
+V^{\pi}_{k+1}(s) \leftarrow \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}_k(s') \right)
+++++
+
+The new estimate of the value of state stem:[s] under the policy stem:[\pi] is determined using an old estimate of the value of the successor state stem:[s'] along with the knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}]. In this update, we
+
+* One-step Look ahead: Look one-step ahead in time: From stem:[s], we take an action prescribed by the policy stem:[\pi], and we land up in stem:[s']. Using the old estimate stem:[V_k(s')], we update the value stem:[V_{k+1}(s)].
+
+* Backup: Use the value of all stem:[s'] that is possible after taking action stem:[a] prescribed by the policy stem:[\pi] at state stem:[s], to back up the value of stem:[s]. 
+
+* Full Backup: We consider all the possible next states stem:[s'] that are one-step ahead in time from stem:[s] after taking action stem:[a] prescribed by the policy stem:[\pi].
+
+* Bootstrap: Using the older value of stem:[V] to get new value of stem:[V].
+
+These are the four things that we do in the update step in the DP algorithm.
+
+.DP Algorithm Terminologies and Schematic View
+image::.\images\dp_terminologies.png[align='center', 800, 500]
+
+Here stem:[s_1', s_2', s_3'] are the possible next states from stem:[s]. To make an update to the value of state stem:[s], we average over the old values of stem:[s_1', s_2'] and stem:[s_3'].
+
+=== Drawbacks of DP Algorithms ===
+
+* Requires full prior knowledge of the dynamics of the environment
+* Can be implemented only in a setting where state space and action space (the cardinality of the space) are manageably finite. For larger number of states, that is, if the size of the transition matrix is high, DP suffers from Bellman's curse of dimensionality.
+* DP uses full width back-ups. The value of every successor state should be considered.
+
+== Model Free Prediction ==
+For a given MDP problem and a policy, without the knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}] (model free), we need to find the value of all states under stem:[\pi], that is evaluate stem:[V^{\pi}(s)] (prediction). There are two methods to do it: Monte Carlo methods and Temporal difference methods.
+
+It is known that the value of stem:[s] under the policy stem:[\pi] is 
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & := \mathbb{E}_{\pi} \left( G_t \, | \, S_t = s\right) = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s \right) \\
+
+& = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right]
+\end{align*}
+++++
+
+The decomposition assumes that the underlying stochastic sequence satisfies the Markov property.
+
+To evaluate stem:[V^{\pi}], we can estimate any of the above two expectations using samples.
+
+* If we use the first formula to estimate the expectation, then it is called a Monte Carlo method.
+* If we use the second formula to estimate the expectation, then it is called a Temporal Difference method.
+
+== Monte Carlo Methods ==
+* At stem:[t=0], say we are at state stem:[s_0] (a particular state), we take an action prescribed by the policy stem:[\pi], and move to stem:[s_1]. Having taken that action, the environment gives the first reward stem:[r_1].
+
+* At stem:[s_1], we again take an action prescribed by the policy stem:[\pi], and move to stem:[s_2]; we get a reward stem:[r_2]. We realize the rewards as we traverse along the states. We repeat this until we reach the goal state. A single trajectory will be
+
+[stem]
+++++
+s_0, a_0, r_1, s_1, a_1, r_2, s_3, \dots, s_T
+++++
+
+As we have realized all the rewards along our way, we can compute stem:[G_0 = r_1 + \gamma r_2 + \gamma^2 r_3 + \dots]. The resulting scalar value forms one sample of discounted sum of rewards. To collect one sample, we need to roll out a full trajectory until we reach stem:[s_T].
+
+Similarly, we can repeat the process, generate as many trajectories as we want and compute the discounted sum of rewards for each. We average all of these to find the *estimate* of stem:[V^{\pi}(s_0)]. The idea is to calculate the sample mean return stem:[G_t] starting from state stem:[s] instead of the expected mean return.
+
+NOTE: The rewards come from the environment. In this setting, we just don't know the functional form for rewards, that is, we don't know the rewards stem:[\mathcal{R}^{\pi}(1), \dots, \mathcal{R}^{\pi}(S)]. But as we move from stem:[s] to stem:[s'] by taking an action, the reward is given by the environment.
+
+=== First-visit Monte Carlo Algorithm ===
+First-visit Monte Carlo is an algorithm used for policy evaluation. In this algorithm, we maintain a counter stem:[N(s)] for every state of the MDP which is initialized to 0.
+
+====
+To evaluate the value of a given state stem:[s] under the policy stem:[\pi], stem:[V^{\pi}(s)], repeat the below steps over several episodes (trajectories) whose starting point doesn't necessarily have to be stem:[s]. In each episode:
+
+. The first time stem:[t] that stem:[S_t=s] (the state at time stem:[t] is stem:[s]) in the episode, do
+
+.. Increment the counter for number of visits to stem:[s]: stem:[N(s) \leftarrow N(s) + 1].
+
+.. Increment the running sum of total discounted returns stem:[S(s)] with return from current episode stem:[G_t]
++
+[stem]
+++++
+S(s) \leftarrow S(s) + G_t
+++++
++
+stem:[S(s)] is the sum of all the rewards we got in all episodes.
+
+. Monte Carlo estimate of value of state stem:[s] under policy stem:[\pi] is then stem:[V(s) \leftarrow \frac{S(s)}{N(s)}].
+====
+
+*Example:*
+
+Consider an MDP with two states stem:[\mathcal{S}= \{A, B\}] with stem:[\gamma=1]. stem:[\mathcal{P}] and stem:[\mathcal{R}] are unknown. Consider a policy stem:[\pi] that gives rise to the following state-reward sequence:
+
+* stem:[A(+3), A(+2), B(-4), A(+4), B(-3)]: From stem:[A], we take an action, go to stem:[A], and get a reward of +3. And so on, ..., and eventually ends at stem:[B] with a terminal value of -3.
+* stem:[B(-2), A(+3), B(-3)]
+
+What is the estimate of stem:[V^{\pi}(A)] and stem:[V^{\pi}(B)] if we use first visit MC?
+
+We start with stem:[N(A)=0, N(B)=0, S(s)=0]. There are two episodes here. Let's estimate stem:[V^{\pi}(A)].
+
+* In the first episode, we see the state stem:[A] first at stem:[t=0]. So, stem:[N(A)=1] and stem:[G_0 = 2]. Then, the sum of total discounted returns stem:[S(A) = 2].
+
+* In the second episode, we see the state stem:[A] first at stem:[t=1]. So, stem:[N(A)=2] and stem:[G_1 = 0]. Then, the sum of total discounted returns stem:[S(A) = 2+0 = 2].
+
+Then, for the given trajectory samples, the estimate of stem:[V^{\pi}(A)] is stem:[V(A) = \frac{S(A)}{N(A)} = \frac{2}{2} = 1].
+
+For the estimate of stem:[V^{\pi}(B)]:
+
+* In the first episode, we see the state stem:[B] first at stem:[t=2]. So, stem:[N(B)=1] and stem:[G_2 = -3]. Then, the sum of total discounted returns stem:[S(B) = -3].
+
+* In the second episode, we see the state stem:[B] first at stem:[t=0]. So, stem:[N(B)=2] and stem:[G_0 = -2]. Then, the sum of total discounted returns stem:[S(B) = -3-2 = -5].
+
+Then, the estimate of stem:[V^{\pi}(B)] is stem:[V(B) = \frac{S(B)}{N(B)} = \frac{-5}{2} = -2.5].
+
+Does this algorithm converge to true stem:[V^{\pi}(s)] for all stem:[s]?
+
+The samples (episodes) are i.i.d, that is, stem:[G_t]'s are independent across episodes. By the law of large numbers, the sequence of averages of these estimates converges to their expected value, stem:[V(s) \to V^{\pi}(s)], as number of samples increases.
+
+=== Every-visit Monte Carlo Algorithm ===
+
+====
+To evaluate stem:[V^{\pi}(s)] for some given state stem:[s], repeat the below steps over several episodes (trajectories) whose starting point doesn't necessarily have to be stem:[s]. In each episode:
+
+. Every time stem:[t] that stem:[S_t=s] (the state at time stem:[t] is stem:[s]) in the episode, do
+
+.. Increment the counter for number of visits to stem:[s]: stem:[N(s) \leftarrow N(s) + 1].
+
+.. Increment the running sum of total discounted returns stem:[S(s)] with return from current episode stem:[G_t]
++
+[stem]
+++++
+S(s) \leftarrow S(s) + G_t
+++++
++
+stem:[S(s)] is the sum of all the rewards we got in all episodes.
+
+. Monte Carlo estimate of value function is then stem:[V(s) \leftarrow \frac{S(s)}{N(s)}].
+====
+
+For the same example above, let's estimate stem:[V^{\pi}(A)] using the every-visit MC:
+
+* In the first episode, we see the state stem:[A] first at stem:[t=0]. So, stem:[N(A)=1] and stem:[G_0 = 2]. Then, the sum of total discounted returns stem:[S(A) = 2]. In the same episode, we see the state stem:[A] again at stem:[t=1]. So, stem:[N(A)=2] and stem:[G_1 = -1]. So, stem:[S(A) = 1]. We see stem:[A] again at stem:[t=3], so stem:[N(A)=3, G_3 = 1] and stem:[S(A) = 2].
+
+* In the second episode, we see the state stem:[A] first at stem:[t=1]. So, stem:[N(A)=4] and stem:[G_1 = 0]. Then, the sum of total discounted returns stem:[S(A) = 2+0 = 2].
+
+Then, for the given trajectory samples, the estimate of stem:[V^{\pi}(A)] is stem:[V(A) = \frac{S(A)}{N(A)} = \frac{2}{4} = 0.5].
+
+Similarly, we can get stem:[V(B) = \frac{-11}{4}].
+
+We can observe that the estimates from both the algorithms are different. As these two algorithms are different and with finite number of samples, the estimates are bound to be different.
+
+In every-visit MC, not all the stem:[G_t] (in the numerator) are i.i.d. In an episode, we see the state stem:[s] for the second time because of the state-action we took in the previous time steps. So, in an episode, stem:[G_t] from the first visit and stem:[G_t] from the second visit are dependent. Even then this algorithm will eventually converge to stem:[V^{\pi}]. The convergence of every visit MC is less straight forward to see (we cannot just resort to the law of large numbers), but it also converges at a quadratic rate to stem:[V^{\pi}(s)].
+
+Nevertheless, both first visit MC and every visit MC converge to stem:[V^{\pi}] as number of trajectories go to infinity. In first visit MC, this is easy to see as each return sample is independent of the another.
+
+CAUTION: In both MC methods (and also in TD methods), it is possible that we may leave out computing stem:[V^{\pi}(s)] for some stem:[s \in \mathcal{S}] because the state stem:[s] was never visited by any of the trajectories. But this is not the case in DP methods.
+
+=== Schematic View ===
+A schematic view of Monte Carlo algorithms:
+
+.Schematic View of Monte Carlo Algorithms
+image::.\images\mc_algo_schematic.png[align='center', 300,200]
+
+Here we don't take the full back up, that is, we don't look at every possible successor state to compute the value of state stem:[s]. But we do multistep look ahead, that is, we roll out a full trajectory starting from stem:[s].
+
+* Uses experience rather than model
+* No bootstrap: we don't use any previous estimate of stem:[V] to revise the estimate of stem:[V]
+* Needs complete sequences; suitable only for episodic tasks (tasks that end at finite time)
+* Suited for off-line learning
+* Time required for one estimate doesn't depend on the total number of states, we consider only those states we encounter in the trajectory. Whereas in DP algorithms, we have to compute the value of all the states at stem:[k]th iteration stem:[V_k(s)] before we compute stem:[V_{k+1}(s)].
+* Estimates for each state are independent.
+
+

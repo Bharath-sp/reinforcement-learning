@@ -1,0 +1,40 @@
+= Few More Concepts on Model Free Prediction =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Certainty Equivalence Estimate ==
+Model based policy evaluation with model estimated from samples.
+
+In the model free prediction methods (MC and TD Prediction methods), we generated samples using a policy stem:[\pi], and using these samples we estimated stem:[V^{\pi}(s)]. Instead of estimating stem:[V^{\pi}(s)], given an experience quadruple stem:[(s,a,s')], we can estimate stem:[\hat{\mathcal{P}}(s' \, | \, s,a)] and stem:[\hat{\mathcal{R}}(s,a,s')].
+
+Suppose we have stem:[K] trajectories and stem:[L_k] time steps in each trajectory. Compute MLE of the transition probability:
+
+[stem]
+++++
+\hat{\mathcal{P}}(s' \, | \, s,a) = \frac{1}{N(s,a)} \sum_{k=1}^K \sum_{t=1}^{L_k -1} \mathbb{I}(s_{k,t}=s, a_{k,t}=a, s_{k,t+1}=s')
+++++
+
+Here stem:[N(s,a)] represents the number of times we have taken the action stem:[a] at state stem:[s]. The indicator function is 1 for those instances where we have taken the action stem:[a] at state stem:[s] and transitioned to stem:[s']. Therefore, this gives the empirical probability of transitioning to stem:[s'] by taking action stem:[a] at stem:[s]. Similarly, we can compute the MLE of the reward function
+
+[stem]
+++++
+\hat{\mathcal{R}}(s,a,s') = \frac{1}{N(s,a, s')} \sum_{k=1}^K \sum_{t=1}^{L_k -1} \mathbb{I}(s_{k,t}=s, a_{k,t}=a, s_{k,t+1}=s') r_{k,t}
+++++
+
+Once MLE estimates of stem:[\hat{\mathcal{P}}] and stem:[\hat{\mathcal{R}}] are known, we can use the value iteration algorithm (the DP method) or the matrix inversion method to compute a MLE based estimate for stem:[V^{\pi}(s)].
+
+== Off-Policy Learning ==
+In all our previous methods, we estimated stem:[V^{\pi}] using samples generated from policy stem:[\pi]. Can we estimate the value stem:[V^{\pi}] or stem:[Q^{\pi}] of a target policy stem:[\pi] using samples generated from another stem:[\mu] (called as behavior policy)? That is, trajectories are sampled from stem:[\mu], but the expected values have to be estimated with respect to stem:[\pi].
+
+In the grid world example, being at state stem:[s], the behavior policy may suggest that we take 'left' action. The corresponding reward and the trajectories (samples) are given to us. Now suppose we have a target policy stem:[\pi] that suggest we take 'right' action at state stem:[s]. We need to evaluate the target policy (that is, the value of taking this action at stem:[s]) using the samples from the behavior policy.
+
+If we were able to do this, the possible benefits are:
+
+* For certain tasks, sample generation might be costly or impossible. In those cases, we can re-use previous experience generated from other policies.
+* Learn about multiple policies while following one behavior policy.
+* Learn about the optimal policy stem:[V_*] by following any exploratory (random) policy.
+
+If we learn about a policy (stem:[V^{\pi}] or stem:[Q^{\pi}]) using samples generated from the same policy stem:[\pi], then it is called *on-policy* learning. If we learn about a policy (stem:[V^{\pi}] or stem:[Q^{\pi}]) using samples generated from some other policy stem:[\mu], then it is called *off-policy* learning.
+

@@ -1,0 +1,143 @@
+= Notations and Terms =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Notation ==
+If we want to solve a problem (particularly sequential decision-making problem) using RL, firstly, we may have to cast it mathematically as a Markov Decision process. Then, solve the MDP using dynamic programming or any other techniques.
+
+.RL framework and notations
+image::.\images\rl_framework.png[align='center', 300, 200]
+
+The state or observation at time stem:[t] is denoted by stem:[s_t]. Having seen the state stem:[s_t], the action or decision taken by the agent is stem:[a_t]. In response to that action, the environment will give two things: next state stem:[s_{t+1}] and the rewards for the action stem:[a_t], denoted by stem:[r_{t+1}].
+
+NOTE: stem:[r_{t+1}] is the reward for taking action stem:[a_t] at state stem:[s_t].
+
+== Important Terms ==
+A random variable is a variable whose value depends on the outcome of a random phenomenon. A stochastic or random process stem:[\{s_t\}_{t \in T}], can be defined as a sequence of random variables that is indexed by some mathematical set stem:[T]. The index set has the interpretation of time (either discrete or continuous). The set stem:[T] is, typically, stem:[\mathbb{N}] or stem:[\mathbb{R}].
+
+Let stem:[s_t] be the state at time stem:[t] of the stochastic process stem:[\{s_t\}_{t \in T}].
+
+*Markov Property:*
+
+A state stem:[s_{t+1}] of a stochastic process stem:[\{s_t\}_{t \in T}] is said to have Markov property if and only if
+
+[stem]
+++++
+P(S_{t+1} = s_{t+1} \, | \, s_t) = P(S_{t+1} =s_{t+1} \, | \, s_1, \dots, s_t)
+++++
+
+* The future is independent of the past given the present.
+
+* The state stem:[s_t] captures all relevant information from history and is a sufficient statistic of the future.
+
+*State Transition Probability:*
+
+For any two states stem:[s] and stem:[s'], the state transition probability is defined by
+
+[stem]
+++++
+\mathcal{P}_{ss'} = P(S_{t+1} = s' \, | \, S_t = s)
+++++
+
+Assume there are stem:[n] states in total. State transition matrix stem:[\mathcal{P}] then denotes the transition probabilities from all states stem:[s] to all other states stem:[s'] (with each row summing to 1).
+
+[stem]
+++++
+\mathcal{P} = \begin{bmatrix}
+\mathcal{P}_{11} & \mathcal{P}_{12} & \dots & \mathcal{P}_{1n} \\
+\vdots & \vdots & \dots & \vdots \\
+\mathcal{P}_{n1} & \mathcal{P}_{n2} & \dots & \mathcal{P}_{nn} \\
+\end{bmatrix}
+++++
+
+CAUTION: The number of states stem:[n] can be (discrete)infinite as well.
+
+=== Markov Chain ===
+A Markov chain or Markov process is a particular type of stochastic process stem:[\{s_t\}_{t \in T}] in which every element (states) of the process satisfies the Markov property. It is represented by tuple stem:[<\mathcal{S}, \mathcal{P}>], where stem:[\mathcal{S}] denotes the set of states and stem:[\mathcal{P}] denotes the state transition probability.
+
+*Example 01*: A simple two-state Markov chain is
+
+.A simple two state Markov chain
+image::.\images\markov_chain_eg_01.png[align='center',400, 200]
+
+* States stem:[\mathcal{S} = \{\text{Sunny}, \text{Rainy}\}]
+* Transition Probability Matrix stem:[\mathcal{P} = \begin{bmatrix}
+0.8 & 0.2 \\
+0.7 & 0.3 \\
+\end{bmatrix}]
+
+With this given, we can ask questions such as 
+
+* What is the probability that tomorrow will be rainy given today is sunny? - 0.2
+* What is the probability that day-after-tomorrow will be rainy given today is sunny? - stem:[0.8 * 0.2 + 0.2 * 0.3 = 0.22]
+
+In general, if one step transition matrix is given by
+
+[stem]
+++++
+\mathcal{P} = \begin{bmatrix}
+P_{ss} & P_{sr} \\
+P_{rs} & P_{rr} \\
+\end{bmatrix}
+++++
+
+then the two step transition matrix is given by
+
+[stem]
+++++
+\mathcal{P}_{(2)} = \begin{bmatrix}
+P_{ss} & P_{sr} \\
+P_{rs} & P_{rr} \\
+\end{bmatrix} \cdot \begin{bmatrix}
+P_{ss} & P_{sr} \\
+P_{rs} & P_{rr} \\
+\end{bmatrix} = \mathcal{P}^2
+++++
+
+In general, stem:[n-] step transition matrix is given by
+
+[stem]
+++++
+\mathcal{P}_{(n)} = \mathcal{P}^n
+++++
+
+With 'sunny' as the start state, possible Markov chain realizations are
+
+* stem:[\{S, R, R, S, \dots\}]
+* stem:[\{S, S, R, R, \dots\}], etc.
+
+These are different realizations of the stochastic sequence.
+
+We made an important assumption in arriving at the above expression. That is, the one-step transition probability matrix stem:[\mathcal{P}] stays constant through time or independent of time, i.e., the state transition probabilities don't change across time. The transition probabilities depend on the length of time interval stem:[[t_1, t_2\]], but not on the exact time instances.
+
+Markov chains generated using such transition matrices are called *homogeneous* Markov chains.
+
+NOTE: I.I.D observations trivially satisfy this property.
+
+*Example 02*: Die roll experiment
+
+Let stem:[\{s_t\}_{t \in T}] model the stochastic process representing the cumulative sum of a fair six-sided die rolls. This forms a Markov chain.
+
+*Example 03*: Natural Language Processing
+
+Let stem:[\{s_t\}_{t \in T}] model the stochastic process that keeps track of the chain of letters in a sentence. Consider an example: Tomorrow is a sunny day.
+
+We normally don't ask what is probability of character 'a' appearing given previous character is 'd'. To predict the next letter, we need the whole past, not just the last letter. So, sentence formation is typically non-Markovian.
+
+=== Absorbing State ===
+A state stem:[s \in \mathcal{S}] is called absorbing state if it is impossible to leave the state. That is
+
+[stem]
+++++
+\mathcal{P}_{ss'} = \begin{cases}
+1, & \text{if } s=s' \\
+0, & \text{otherwise}
+\end{cases}
+++++
+
+When we reach an absorbing state, the sequence ends.
+
+
+

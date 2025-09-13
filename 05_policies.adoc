@@ -1,0 +1,275 @@
+= Policies =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Policy ==
+Can we come up with a formal way to describe how to take actions?
+
+Being at state stem:[s], the goal is to choose a sequence of actions such that the expected total discounted future reward stem:[\mathbb{E}(G_t \, | \, S_t = s)] (the value function) is maximized where
+
+[stem]
+++++
+\mathbb{E}(G_t \, | \, S_t = s) = \mathbb{E} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s \right)
+++++
+
+We take an action by being at a state. A policy, often denoted by stem:[\pi], is a mapping from state space stem:[\mathcal{S}] to action space stem:[\mathcal{A}].
+
+== Types of Policies ==
+
+* Deterministic Policy: stem:[a = \pi(s)], stem:[s \in \mathcal{S}, a \in \mathcal{A}]. For example, being at state stem:[s], the policy may say that we should move right. Every time we visit this state stem:[s], we always move right.
+
+* Stochastic Policy: stem:[\pi(a \, | \, s) = \mathbb{P}[A_t = a \, | \, S_t=s\]]. Being at state stem:[s], we take certain actions at certain probabilities. For example, being at state stem:[s], the policy may suggest that we do action A with probability 0.7 or action B with probability 0.3.
+
+*Example 01: Navigation Problem:*
+
+.Navigation Problem
+image::.\images\mdp_nav_prob.png[align='center',200, 200]
+
+* States stem:[\mathcal{S}]: 1 to 14 (non-terminal) and two terminal states (shaded).
+* Actions stem:[\mathcal{A} : \{\text{ Right, left, up, down}\}].
+* Deterministic Policy:
++
+[stem]
+++++
+\pi(s) = \begin{cases}
+\text{Down}, & \text{if } s=\{3,7,11\} \\
+\text{Right}, & \text{Otherwise } \\
+\end{cases}
+++++
++
+Example sequences: stem:[\{ \{8,9,10,11,G\}, \{2,3,7,11,G\}\}].
+
+* Stochastic Policy: stem:[\pi(a \, | \, s)] could be a uniform random action between all available actions at state stem:[s], i.e., giving equal probability to every action possible from the state. Stochastic policies are more useful in multi-agent settings so as to keep the opponent guessing our next move.
+
+== Policy Evaluation ==
+Given an MDP and a policy stem:[\pi], we define the value of a policy as follows:
+
+*State-Value Function:*
+
+The value stem:[V^{\pi}(s)] of state stem:[s] under policy stem:[\pi] is the expected (discounted) total return starting from state stem:[s] and then following the policy stem:[\pi].
+
+[stem]
+++++
+V^{\pi}(s) = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s \right)
+++++
+
+This is the average reward that we get following the trajectory starting from stem:[s] using the policy stem:[\pi]. The expectation is over the probability distribution of transitioning from stem:[s] to stem:[s'] under policy stem:[\pi].
+
+Here the transition from stem:[s] to stem:[s'] is dictated by the policy. The transition from stem:[s'] to the next state is also dictated by the policy, and so on. In MRP, the nature took us through states. Here both action + nature (in the case of stochastic environment) take us through states.
+
+Being at state stem:[s], the policy may be stochastic, and it may suggest that we take action A with probability stem:[p] and action B with probability stem:[(1-p)]. After taking one of these actions, the environment tells us the next state. We don't move to the intended state always; stochasticity in the environment plays a role here. Therefore, there are two stochasticities involved here: stochastic policy and stochastic environment.
+
+*Example:*
+
+.Policy Evaluation Example
+image::.\images\policy_eval_eg_01.png[align='center',500, 300]
+
+* States stem:[\mathcal{S} = \{A, B, G_1, G_2\}]; states stem:[G_1] and stem:[G_2] are terminal states.
+* Two actions stem:[\mathcal{A} = \{a_1, a_2\}].
+
+We are interested in evaluating the value of state stem:[A] and stem:[B] under two policies. Let stem:[\pi_f] be a forward policy; i.e., from any state it suggests that we take action stem:[a_1]. And let stem:[\pi_b] be a backward policy; i.e., from any state it suggests that we take action stem:[a_2].
+
+* Value of states under stem:[\pi_f] is stem:[V_{\pi_f}(A) = 11; V_{\pi_f}(B) = 10].
+* Value of states under stem:[\pi_b] is stem:[V_{\pi_b}(A) = 5; V_{\pi_b}(B) = 6].
+
+As we can see here, the value of the states depends on the policies, unlike the case in MRPs.
+
+== Decomposition of State Value Function ==
+
+The state-value function can be decomposed into immediate reward plus discounted value of successor state.
+
+[stem]
+++++
+V^{\pi}(s) = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma V^{\pi}(s_{t+1})  \, | \, S_t = s \right)
+++++
+
+Let stem:[\mathcal{R}_{ss'}^a = \mathcal{R}(s, a, s')] be the reward that we get by taking action stem:[a] at stem:[s] and moving to stem:[s']. On expanding the expectation, we get
+
+[stem]
+++++
+\mathbb{E}_{\pi} \left( r_{t+1} \, | \, S_t =s \right) =  \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \cdot \mathcal{R}_{ss'}^a
+++++
+
+The average reward that we get by taking an action suggested by policy stem:[\pi] at state stem:[s]. The first term stem:[\pi(a \, | \, s)], the probability of taking action stem:[a], accounts for the stochastic policy. The second term stem:[\mathcal{P}^{a}_{ss'}], the probability of reaching stem:[s'] from stem:[s] having taken action stem:[a] at state stem:[s], accounts for stochastic environment. We average over all possible actions and all possible next states. Similarly
+
+[stem]
+++++
+\mathbb{E}_{\pi} \left( \gamma V^{\pi}(s_{t+1})  \, | \, S_t =s \right) =  \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \cdot \gamma V^{\pi}(s')
+++++
+
+Hence,
+
+[stem]
+++++
+V^{\pi}(s) = \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}(s') \right)
+++++
+
+This equation is called the Bellman Evaluation operator, as it is used to evaluate a policy.
+
+=== Matrix Formulation of Bellman Evaluation Equation ===
+
+Let stem:[\mathcal{S} = \{1,2,\dots, n\}] (Finite States) and stem:[\mathcal{P}, \mathcal{R}] be known. We know that
+
+[stem]
+++++
+V^{\pi}(s) = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \mathcal{R}_{ss'}^a + \gamma \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} V^{\pi}(s') 
+++++
+
+The second term can be re-written as follows:
+
+Say we are at stem:[s_1]. Two actions stem:[a_1] and stem:[a_2] can be taken. For each of these actions, we can go either to state stem:[s_2] or stem:[s_3].
+
+[stem]
+++++
+\begin{align*}
+& \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} V^{\pi}(s') \\
+\\
+& =  \pi(a_1 \, | \, s_1) \left[ \mathcal{P}^{a_1}_{s_1 s_2} V^{\pi}(s_2) + \mathcal{P}^{a_1}_{s_1 s_3} V^{\pi}(s_3) \right] + \pi(a_2 \, | \, s_1) \left[ \mathcal{P}^{a_2}_{s_1 s_2} V^{\pi}(s_2) + \mathcal{P}^{a_2}_{s_1 s_3} V^{\pi}(s_3) \right] \\
+\\
+& =  \pi(a_1 \, | \, s_1) \mathcal{P}^{a_1}_{s_1 s_2} V^{\pi}(s_2) + \pi(a_1 \, | \, s_1) \mathcal{P}^{a_1}_{s_1 s_3} V^{\pi}(s_3) +  \pi(a_2 \, | \, s_1) \mathcal{P}^{a_2}_{s_1 s_2} V^{\pi}(s_2) + \pi(a_2 \, | \, s_1) \mathcal{P}^{a_2}_{s_1 s_3} V^{\pi}(s_3) \\
+\\
+& =  \pi(a_1 \, | \, s_1) \mathcal{P}^{a_1}_{s_1 s_2} V^{\pi}(s_2) +  \pi(a_2 \, | \, s_1) \mathcal{P}^{a_2}_{s_1 s_2} V^{\pi}(s_2) + \pi(a_1 \, | \, s_1) \mathcal{P}^{a_1}_{s_1 s_3} V^{\pi}(s_3) + \pi(a_2 \, | \, s_1) \mathcal{P}^{a_2}_{s_1 s_3} V^{\pi}(s_3) \\
+\\
+& =  \left[ \pi(a_1 \, | \, s_1) \mathcal{P}^{a_1}_{s_1 s_2} +  \pi(a_2 \, | \, s_1) \mathcal{P}^{a_2}_{s_1 s_2} \right] V^{\pi}(s_2) + \left[ \pi(a_1 \, | \, s_1) \mathcal{P}^{a_1}_{s_1 s_3} + \pi(a_2 \, | \, s_1) \mathcal{P}^{a_2}_{s_1 s_3} \right] V^{\pi}(s_3) \\
+\\
+& =  \left[ \sum_a \pi(a \, | \, s_1) \mathcal{P}^{a}_{s_1 s_2} \right] V^{\pi}(s_2) + \left[ \sum_a \pi(a \, | \, s_1) \mathcal{P}^{a}_{s_1 s_3} \right] V^{\pi}(s_3) \\
+\end{align*}
+++++
+
+In general, this can be written as
+
+[stem]
+++++
+\sum_{s'} \left[ \sum_a \pi(a \, | \, s) \mathcal{P}^{a}_{ss'} \right] V^{\pi}(s')
+++++
+
+Denote
+
+[stem]
+++++
+\begin{align*}
+\mathcal{P}^{\pi}(s' \, | \, s) & = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \, \mathcal{P}^{a}_{ss'}  \\
+
+\mathcal{R}^{\pi}(s) & =  \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \mathcal{R}_{ss'}^a = \mathbb{E}_{\pi} \left( r_{t+1} \, | \, S_t =s \right)
+\end{align*}
+++++
+
+* stem:[\mathcal{P}^{\pi}(s' \, | \, s)] represents the probability of getting to stem:[s'] from stem:[s] under the policy stem:[\pi]. This is just a specialized transition probability matrix which is driven by policy stem:[\pi]. We get a different transition probability matrix for each given policy stem:[\pi].
+
+* stem:[\mathcal{R}^{\pi}(s)] represents the average reward that we get in state stem:[s] under the policy stem:[\pi].
+
+Then
+
+[stem]
+++++
+V^{\pi}(s) = \mathcal{R}^{\pi}(s) + \gamma \sum_{s'} \mathcal{P}^{\pi}(s' \, | \, s) V^{\pi}(s')
+++++
+
+Which can be written in matrix form as stem:[\mathbf{V}^{\pi} = \mathbf{R}^{\pi} + \gamma \mathbf{P}^{\pi} \mathbf{V}^{\pi}]. Solving for stem:[\mathbf{V}^{\pi}], we get
+
+[stem]
+++++
+\mathbf{V}^{\pi} = (\mathbf{I} - \gamma \mathbf{P}^{\pi})^{-1} \mathbf{R}^{\pi}
+++++
+
+Bellman Evaluation Equation for stem:[\mathbf{V}^{\pi}] is a system of stem:[n = |\mathcal{S}|] (linear) equations with stem:[n] variables and can be solved if stem:[\mathbf{P}^{\pi}] and stem:[\mathbf{R}^{\pi}] are known. This help us get the value of all the states in the MDP under the given policy stem:[\pi].
+
+== Value Function Computation: Example ==
+
+image::.\images\mdp_value_func_eg.png[align='center',300, 300]
+
+* States stem:[\mathcal{S} = \{A, B, C, D\}]; state stem:[D] is the exit state. From stem:[D], there is only one action possible. We take that action and get a reward of +100, and the trajectory ends.
+* Two actions stem:[\mathcal{A} = \{a_1, a_2\}].
+* Stochastic environment with chosen action succeeding 90% and failing 10%. Upon failure, agent moves in the direction suggested by the other action. For example, being in state stem:[A], say our policy suggests that we take action stem:[a_1]. Even after taking action stem:[a_1], we get to state stem:[B] for 90% of the time and to state stem:[C] (as suggested by the other action) for 10% of the time.
+
+Consider a deterministic policy stem:[\pi_1] that chooses action stem:[a_1] in all states. What is the value for all the states under this policy?
+
+We know stem:[\mathcal{R}_{ss'}^a] (as it is given) and the transition probability matrix corresponding to policy stem:[\pi_1] is given by
+
+[stem]
+++++
+\mathcal{P}^{\pi} = \mathcal{P}^{a} = \begin{bmatrix}
+ & A & B & C & D \\
+A & 0 & 0.9 & 0.1 & 0 \\
+B & 0.1 & 0 & 0 & 0.9 \\
+C & 0.9 & 0 & 0 & 0.1 \\
+D & 0 & 0 & 0 & 1
+\end{bmatrix} 
+++++
+
+As the policy is deterministic, stem:[\pi(a \, | \, s) =1], and assuming stem:[\gamma=1], the value function is given by
+
+[stem]
+++++
+V^{\pi}(s) = \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + V^{\pi}(s') \right)
+++++
+
+The value of the states under stem:[\pi_1] is
+
+* stem:[V^{\pi_1}(D) = 100]
+* stem:[V^{\pi_1}(A) = 0.9 * [-10 + V^{\pi_1}(B)\] + 0.1 * [-10 + V^{\pi_1}(C)\]]
+* stem:[V^{\pi_1}(B) = 0.9 * [-10 + V^{\pi_1}(D)\] + 0.1 * [-10 + V^{\pi_1}(A)\]]
+* stem:[V^{\pi_1}(C) = 0.9 * [-10 + V^{\pi_1}(A)\] + 0.1 * [-10 + V^{\pi_1}(D)\]]
+
+On solving this system of linear equations, we get
+
+[stem]
+++++
+V^{\pi_1} = \{75.61, 87.56, 68.05, 100\}
+++++
+
+Similarly, consider a deterministic policy stem:[\pi_2] that chooses action stem:[a_2] in all states. The transition probability matrix corresponding to policy stem:[\pi_2] is given by
+
+[stem]
+++++
+\mathcal{P}^{\pi} = \mathcal{P}^{a} = \begin{bmatrix}
+ & A & B & C & D \\
+A & 0 & 0.1 & 0.9 & 0 \\
+B & 0.9 & 0 & 0 & 0.1 \\
+C & 0.1 & 0 & 0 & 0.9 \\
+D & 0 & 0 & 0 & 1
+\end{bmatrix} 
+++++
+
+The value of the states under stem:[\pi_2] is
+
+* stem:[V^{\pi_2}(D) = 100]
+* stem:[V^{\pi_2}(A) = 0.9 * [-10 + V^{\pi_2}(C)\] + 0.1 * [-10 + V^{\pi_2}(B)\]]
+* stem:[V^{\pi_2}(B) = 0.9 * [-10 + V^{\pi_2}(A)\] + 0.1 * [-10 + V^{\pi_2}(D)\]]
+* stem:[V^{\pi_2}(C) = 0.9 * [-10 + V^{\pi_2}(D)\] + 0.1 * [-10 + V^{\pi_2}(A)\]]
+
+On solving this system of linear equations, we get
+
+[stem]
+++++
+V^{\pi_2} = \{75.61, 68.05, 87.56, 100\}
+++++
+
+== Ordering of Policies ==
+
+As we can observe in our previous example, for some states, taking policy stem:[\pi_1] is better and for other states, taking policy stem:[\pi_2] is better. How can we actually compare two policies?
+
+We define a partial ordering over policies. A policy stem:[\pi] is at least as good as policy stem:[\pi']
+
+[stem]
+++++
+\pi \geq \pi', \text{ if } V^{\pi}(s) \geq V^{\pi'}(s), \,\, \forall s \in \mathcal{S}
+++++
+
+We say stem:[\pi] is better than stem:[\pi'] if stem:[V^{\pi}(s) > V^{\pi'}(s), \,\, \forall s \in \mathcal{S}].
+
+But in our example above, we observe that for some states stem:[\pi_1] is better and for some states stem:[\pi_2] is better. Such policies cannot be compared. In general, some policies in policy space are not comparable at all. This leads us to the definition of partial ordering over policies rather than total ordering in the policy space. Not every two policies are comparable in the policy space.
+
+== Optimal Policy ==
+
+====
+*Theorem:*
+
+* For a given MDP (under some loose conditions), there always exists an (at least one) optimal policy stem:[\pi_*] that is better than or equal to all other policies.
+
+* If there are more than one optimal policy, all optimal policies achieve the same value function, stem:[V^{\pi_*}(s) = V_*(s)], for all states of the MDP. This says that the optimal policies stem:[\pi_*] can be many, but stem:[V^{\pi_*}(s)] is unique.
+====
+
+For the given MDP, we hunt either for the optimal policy stem:[\pi_*] (in the policy space) or the optimal value function stem:[V_*(s)] (in the value function space). If we find stem:[\pi_*], we can easily find stem:[V_*], and vice-versa. Solving an MDP refers to finding the optimal policy.

@@ -1,0 +1,121 @@
+= Comparison of Methods =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Schematic View of Algorithms ==
+.Schematic view of various algorithms
+image::.\images\schematic_view_all_algo.png[align='left', 800, 400]
+
+For a given policy, to evaluate the value of a state
+
+* In DP methods, we look at one step ahead in time, but consider all the possible successor states.
+* In MC methods, we go till the end of the trajectory to realize a sample.
+* In TD methods, we just look at one step ahead in time, and don't consider all the possible successor states.
+
+== Bias and Variance ==
+The MC and TD methods help us get estimates. Then, we should talk about the bias and variance of these methods. This helps us understand how good the estimates are.
+
+=== Bias in MC algorithms ===
+
+Suppose we have a probability distribution stem:[p(x; \theta)] parameterized by stem:[\theta]. Suppose the true value is stem:[\theta]. We are trying to estimate stem:[\theta] from samples. Let stem:[\hat{\theta}] be an estimator of stem:[\theta] that depends on observations from the distribution. Bias of the estimator stem:[\hat{\theta}] is given by stem:[\mathbb{E}_x[\hat{\theta}\] - \theta].
+
+In MC methods, we use the following expectation formula to estimate stem:[V^{\pi}(s)]
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & := \mathbb{E}_{\pi} \left( G_t \, | \, S_t = s\right) = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s \right) \\
+\end{align*}
+++++
+
+In the first-visit MC, the estimator is
+
+[stem]
+++++
+V(s) = \frac{1}{k} \sum_{i=1}^k G_t^{i}(s)
+++++
+
+where stem:[G_t^{i}(s)] is the return following the first visit to stem:[s] in episode stem:[i], and stem:[k] is the number of trajectories seen.
+
+[stem]
+++++
+\mathbb{E}[V(s)] = \mathbb{E}\left[\frac{1}{k} \sum_{i=1}^k G_t^{i}(s) \right] = \frac{1}{k} \sum_{i=1}^k \mathbb{E}[G_t^{i}(s)] = \frac{1}{k} k \cdot V^{\pi}(s) = V^{\pi}(s)
+++++
+
+Since each total discounted return stem:[G_t] is sampled from independent trajectory, they are i.i.d. Each stem:[G_t^{i}(s)] is a random variable whose expected value is exactly the true state value stem:[V^{\pi}(s)]. Therefore, stem:[\sum_{i=1}^k \mathbb{E}[G_t^{i}(s)\] = k \cdot V^{\pi}(s)]. The sample mean converges to stem:[V^{\pi}(s)] as stem:[k \to \infty]. Therefore, the First-visit MC estimate of stem:[V^{\pi}(s)] has no bias.
+
+=== Variance in MC algorithms ===
+
+Consider a sequence of estimates stem:[V_k(s)] (each such estimate is a random variable) for a particular state stem:[s] computed as
+
+[stem]
+++++
+V_k(s) = \frac{1}{k} \sum_{i=1}^k G_t^{i}(s)
+++++
+
+Then
+
+[stem]
+++++
+\begin{align*}
+\text{Var}(V_k(s)) & = \text{Var}\left(\frac{1}{k} \sum_{i=1}^k G_t^{i}(s) \right) = \frac{1}{k^2} \text{Var} \left( \sum_{i=1}^k G_t^{i}(s) \right) \\
+& = \frac{1}{k^2} k \text{Var}(G_t^{i}(s)) = \frac{1}{k} \text{Var}(G_t^{i}(s))
+\end{align*}
+++++
+
+We wrote stem:[\text{Var} \left( \sum_{i=1}^k G_t^{i}(s) \right) = k \text{Var}(G_t^{i}(s)) ] as it is a sum of stem:[k] i.i.d random variables. We then have stem:[\text{Var}(V_k(s)) \propto \frac{1}{k}]. As the sample size stem:[k] increases, the variance of the estimates stem:[V_k(s)] reduces.
+
+Hence, MC methods tend to have high variance as returns are a function of multistep sequence of random actions, states and rewards. But as stem:[k] increases, the variance of the estimates stem:[V_k(s)] reduces. In short, in the beginning of training phase, for the First-visit MC: unbiased, high variance.
+
+=== Bias in TD algorithms ===
+In TD methods, the value estimates are computed using 
+
+[stem]
+++++
+V^{\pi}(s) := \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right]
+++++
+
+The estimator is
+
+[stem]
+++++
+V(s) = \frac{1}{k} \sum_{i=1}^k \left[ r^i_{t+1} + \gamma V^i(s_{t+1}) \right]
+++++
+
+Taking expectation
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}\left[ r_{t+1} + \gamma V(s_{t+1}) \, | \, S_t=s \right] & = \mathbb{E}\left[ r_{t+1} + \gamma V(s_{t+1}) + \gamma V^{\pi}(s_{t+1}) - \gamma V^{\pi}(s_{t+1}) \, | \, S_t=s \right] \\
+
+& = \mathbb{E}\left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t=s  \right] + \gamma \mathbb{E}\left[ V(s_{t+1}) -  V^{\pi}(s_{t+1}) \, | \, S_t=s \right] \\
+\end{align*}
+++++
+
+The second term is nonzero unless stem:[V(s_{t+1}) = V^{\pi}(s_{t+1})]. But stem:[V(s_{t+1})] is an estimate of the value function; not a sample from value function. So, bias exists in TD target stem:[r_{t+1} + \gamma V(s_{t+1})] as stem:[V(s_{t+1})] is an estimate of value function and not the true value function.
+
+TD methods have high bias (initially) because we use bootstrapping; we use an old estimate to get a new estimate. The initial estimate will be far from true stem:[V^{\pi}], but as the training progresses the bias will reduce; asymptotically it goes to zero. In short, in the beginning of training phase: high bias, low variance.
+
+In MC methods, we roll out several trajectories from state stem:[s], go until the end, and then we take average of the sum of the discounted rewards at this stage. We encounter a lot of random variables (future states, actions, rewards) in the trajectory. It means lots of future rewards need to be summed. This causes the MC estimate to have high variance. In the TD, we cut off the path only until next state (in one step TD). So, only three random variables: one random action (from stochastic policy), reward, and next state are involved, and hence the TD estimate has low variance.
+
+.Variance of MC and TD Algorithms
+image::.\images\bias_variance_td_mc.png[align='center', 500, 300]
+
+== Different Policy Evaluation Algorithms ==
+
+[cols="1,1,1,1"]
+|===
+| |DP Algorithms |MC Algorithms |TD Algorithms
+
+|*Model Free* |No |Yes |Yes
+|*Non Episodic Domains* |Yes |No |Yes
+|*Non Markovian Domains* |No |Yes |No
+|*Bias* |Not Applicable |Unbiased |Some bias
+|*Variance* |Not Applicable |High Variance |Low Variance
+|===
+
+* DP and TD algorithms are suitable for non-episodic domains, in MC, we need finite horizon settings.
+* The Bellman decomposition equation requires the Markovian assumption. DP and TD algorithms depend on the decomposition. So, DP and TD algorithms work in Markovian settings, whereas MC can work in Non-Markovian settings as well.

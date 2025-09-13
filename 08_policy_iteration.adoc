@@ -1,0 +1,195 @@
+= Policy Iteration =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Policy Evaluation ==
+Is there a way to arrive at stem:[\pi_*] starting from an arbitrary policy stem:[\pi]?
+
+We can start either with any arbitrary policy (deterministic or stochastic). A simple stochastic policy to start off with is at every state stem:[s] we take all the permissible actions with equal probability. We start with a policy stem:[\pi]. Evaluate the given policy stem:[\pi], that is, compute
+
+[stem]
+++++
+V^{\pi}(s) = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots \, | \, S_t = s \right)
+++++
+
+* Solution 1: Solve a system of linear equations using any solver.
+
+* Solution 2: Iterative application of Bellman Evaluation Equation. Iterative update rule:
++
+[stem]
+++++
+V^{\pi}_{k+1}(s) \leftarrow \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}_k(s') \right)
+++++
+
+The sequence of value functions stem:[\{ V_1^{\pi}, V_2^{\pi}, \dots,\}] converge to stem:[V^{\pi}].
+
+== Policy Improvement ==
+Suppose we know stem:[V^{\pi}]. How to improve policy stem:[\pi]? We know that in stem:[Q^{\pi}(s,a)], we take the first action arbitrarily, and then follow the policy stem:[\pi] from stem:[s'].
+
+[stem]
+++++
+\begin{align*}
+Q^{\pi}(s,a) & = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s, A_t = a \right)
+\\
+& = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma V^{\pi}(s_{t+1})  \, | \, S_t = s, A_t = a \right) \\
+
+& = \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right] \\
+\end{align*}
+++++
+
+Suppose it is given that stem:[Q^{\pi}(s, a) > V^{\pi}(s)], then this arbitrary action stem:[a] is better than the action recommended by the policy stem:[\pi] at state stem:[s]. So, it is better to select action stem:[a] at stem:[s] and thereafter follow the policy stem:[\pi]. This is a special case of the policy improvement theorem.
+
+=== Policy Improvement Theorem ===
+
+====
+Let stem:[\pi] and stem:[\pi'] be any pair of deterministic policies such that for all stem:[s \in \mathcal{S}]
+
+[stem]
+++++
+Q^{\pi}(s, \pi'(s)) \geq V^{\pi}(s)
+++++
+
+Then stem:[V^{\pi'}(s) \geq V^{\pi}(s)] for all stem:[s \in \mathcal{S}]. That means, the policy stem:[\pi'] is at least as good as policy stem:[\pi].
+====
+
+stem:[Q^{\pi}(s, \pi'(s))] means the first action is the  action recommended by stem:[\pi'] at state stem:[s], and and thereafter follow the policy stem:[\pi].
+
+Now consider the greedy policy stem:[\pi' = \text{greedy}(V^{\pi})]. Then, stem:[\pi' \geq \pi]. That is, stem:[V^{\pi'}(s) \geq V^{\pi}(s)] for all stem:[s \in \mathcal{S}].
+
+* By definition of stem:[\pi'], at state stem:[s], the action chosen by policy stem:[\pi'] is given by
++
+[stem]
+++++
+\pi'(a \, | \, s) = \text{greedy}(Q) = \begin{cases}
+1 & \text{if } a = \arg \max_{a \in \mathcal{A}} Q^{\pi}(s,a) \\
+0 & \text{Otherwise }
+\end{cases}
+++++
++
+Which is in turn given as
++
+[stem]
+++++
+\pi'(s) = \arg \max_{a \in \mathcal{A}} Q^{\pi}(s,a)
+++++
+
+* Then
++
+[stem]
+++++
+Q^{\pi}(s, \pi'(s)) = \max_a Q^{\pi}(s,a) \,\,\, \geq \,\,\, Q^{\pi}(s, \pi(s)) = V^{\pi}(s)
+++++
+
+The condition of the Policy improvement theorem is satisfied for the policy stem:[\pi']. It therefore improves the value function, stem:[V^{\pi'}(s) \geq V^{\pi}(s)] for all stem:[s \in \mathcal{S}]. Thus it is proved that the policy stem:[\pi'] (the greedy policy) is at least as good as the policy stem:[\pi].
+
+As we are looking for a greedy policy here, we are only looking over the space of deterministic policies. The initial policy we considered stem:[\pi_1] may be a stochastic policy, but from the second step, we are looking only for deterministic policies.
+
+== Policy Iteration Algorithm ==
+We start with a policy stem:[\pi_1]. Evaluate the policy stem:[V^{\pi_1}(s)]. And then arrive at an improved version of the policy stem:[\pi'] which is greedy with respect to stem:[V^{\pi_1}(s)]. This stem:[\pi'(s)] will be at least as good as stem:[\pi]. Thereafter repeat the procedure.
+
+image::.\images\policy_iter_algo.png[align='left', 700, 500]
+
+NOTE: stem:[N] and stem:[K] could be some scalars. The evaluation step, that is, computing stem:[V^{\pi}(s)], can also be done using the matrix algebra method.
+
+[stem]
+++++
+\pi_1 \xrightarrow{ \,\, E \,\, } V^{\pi_1} \xrightarrow{ \,\,\, I \,\,\, } \pi_2 
+\xrightarrow{ \,\, E \,\, } V^{\pi_2} \xrightarrow{ \,\,\, I \,\,\, } \pi_3 \xrightarrow{ \,\, E \,\, } \dots \xrightarrow{ \,\, I \,\, } \pi^* \xrightarrow{ \,\,\, E \,\,\, } V^*
+++++
+
+E for evaluation, and I for improvement. The sequence stem:[\{\pi_1, \pi_2, \dots, \}] will converge to stem:[\pi_*], and the sequence stem:[\{V^{\pi_1}, V^{\pi_2}, \dots, \}] will converge to stem:[V^*]. 
+
+When do we stop it? If improvement stops, then
+
+[stem]
+++++
+Q^{\pi}(s, \pi'(s)) = \max_a Q^{\pi}(s,a) \,\,\, = \,\,\, Q^{\pi}(s, \pi(s)) = V^{\pi}(s)
+++++
+
+That is, the policy stem:[\pi_{n+1}] doesn't not show any improvement over stem:[\pi_n]. And it doesn't improve any further. Except the first policy stem:[\pi_1] in the sequence, all other policies are deterministic policies. There are only finite deterministic policies in a finite state and finite action settings. So, certainly the improvement stops after some iterations.
+
+When improvement stops, we observe that the Bellman optimality equation is satisfied as
+
+[stem]
+++++
+V^{\pi}(s) = \max_a Q^{\pi}(s,a)
+++++
+
+The policy stem:[\pi] for which the improvement stops is the optimal policy.
+
+[stem]
+++++
+V^{\pi}(s) = V_*(s) \,\, \forall s \in \mathcal{S}
+++++
+
+So in the algorithm, we can stop before stem:[N] iterations (the outer for loop) as well if the improvement stops.
+
+== Grid World Example ==
+Consider a stem:[4 \times 4] grid world problem
+
+.Navigation Problem
+image::.\images\mdp_nav_prob.png[align='center',200, 200]
+
+States stem:[\mathcal{S}]: 1 to 14 (non-terminal) and two goal states (shaded). Actions stem:[\mathcal{A} : \{\text{Right, left, up, down}\}]. At any intermediary states, any of these four actions is possible.
+
+* Step 1: We start off with a random policy stem:[\pi_1]. That is, from state stem:[s], we can move to all directions with equal probability.
+
+* Step 2: Evaluate the value of stem:[\pi_1]. Left side matrices in the image are the evaluation of the random policy stem:[\pi_1] at stem:[k]th iteration.
++
+The update rule is:
++
+[stem]
+++++
+V^{\pi_1}_{k+1}(s) \leftarrow \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi_1}_k(s') \right)
+++++
++
+image::.\images\policy_iter_eg_01.png[align='center']
++
+At stem:[k=\infty], we get stem:[V_{\infty}^{\pi_1}(s)]. The value of each state stem:[s] indicates the expected number of steps to reach the goal state (either one of the two) by following the random policy stem:[\pi_1].
+
+The matrices on the right are the greedy policies with respect to their stem:[V^{\pi_1}_k(s)].
+
+*Schematic Representation of Policy Iteration Algorithm:*
+
+image::.\images\policy_iter_schematic.png[align='center', 600, 400]
+
+The sequence stem:[\{\pi_1, \pi_2, \dots, \}] is guaranteed to converge. At convergence, both current policy, and the value function associated with the policy are optimal.
+
+== Modified Policy Iteration Algorithms ==
+Can we computationally simplify the policy iteration process?
+
+We don't have to wait for the policy evaluation step to converge to stem:[V^{\pi_i}(s)], that is, until we find the exact value of each state under the policy stem:[\pi_i].
+
+We can have a stopping criterion like stem:[\epsilon] -convergence of value function evaluation or stem:[K] iterations of policy evaluation. We can stop the evaluation process (the inner for loop) at any intermediate stem:[k], and come up with a policy that is greedy with respect to that stem:[V^{\pi_i}_k(s)]. On repeating this, we still end up with the optimal policy stem:[\pi_*]. Extreme case of stem:[K=1] is the *value iteration* algorithm. We update the policy at every iteration.
+
+*Asynchronous Dynamic Programming:*
+
+In the policy iteration (or in the value iteration) algorithm, to move to stem:[k=2], we should complete finding the value of all stem:[s \in \mathcal{S}]. This is known as synchronous dynamic programming. We should wait for the evaluation at every stem:[s] to finish to start the next iteration.
+
+In asynchronous dynamic programming, updates to states are done individually, in any order. That is, before stem:[V_2] gets completed for all states, we can compute stem:[V_3] for some states. By doing so, it is possible that for computing stem:[V_3(s)] at some state stem:[s], we may use stem:[V_1(s')] in the update step, instead of stem:[V_2(s')]. But this doesn't be a problem.
+
+This can significantly reduce computation. And convergence is guaranteed if all states are selected sufficient number of times.
+
+*Real Time Dynamic Programming:*
+
+In the value iteration algorithm, we don't have to find the value for every state. It is enough to find the value for only those states that are relevant to the agent. Being at state stem:[s], we take any of the permissible actions. Say we take an action stem:[a], and go to the next state stem:[s']. In this process we get a reward of stem:[r_{t+1}]. Once we have a trajectory from stem:[s], update the value of state stem:[s]
+
+[stem]
+++++
+V(s) \leftarrow \max_a \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V(s') \right] \right]
+++++
+
+Then go to all stem:[s'], and repeat the process. This way we update the value of only the relevant states.
+
+== MDP and RL Setting ==
+
+The value iteration and policy iteration algorithms are called exact methods because they work only only if we know the state transition matrices stem:[\mathcal{P}^{a}_{ss'}] and the reward function stem:[\mathcal{R}]. In this setting, we can exactly find stem:[V_*(s), Q_*(s,a)] or stem:[\pi_*]. Such settings where we have the knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}], and use the exact methods to solve the MDP is called the MDP setting.
+
+In RL Settings, generally, we don't have knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}] (both or either). The goal in both these settings are the same: Determine the optimal sequence of actions such that the total discounted future reward is maximum. In the RL setting, we try to find an approximate solution.
+
+CAUTION: Although, this course would assume Markovian structure to state transitions, in many (sequential) decision making problems we may have to consider the history as well.
+
+
+

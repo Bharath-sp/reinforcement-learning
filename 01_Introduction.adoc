@@ -1,0 +1,78 @@
+= Introduction =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== What is Reinforcement Learning? ==
+Machine learning is about developing bots that has the ability to automatically learn and improve from experience without being explicitly programmed.
+
+* In supervised learning, the input is the training data stem:[(\mathbf{x}, y)] where stem:[\mathbf{x}] is data and stem:[y] is label. The goal is to learn a function stem:[f] to map stem:[y=f(\mathbf{x})]. And here we solve classification and regression problems.
+
+* In unsupervised learning, the input is only the data, no label. The goal is to learn the underlying structure. And here we typically do the task of clustering.
+
+In reinforcement learning, there is no input data given. An agent interacts with the environment to collect the data. The goal is *learning to perform a task (a sequence of actions)*. A reward system help the agent learn this decision process. The agent learns to interact with environment in such a way that the rewards (or an utility function) is maximized.
+
+*Example 01:* The task is to learn to navigate from square S to reach square G in as less moves as possible.
+
+.Navigation in grid world
+image::.\images\maze_grid.png[align='center', 300, 200]
+
+The first goal is to reach G, and the second goal is to reach it in as less moves as possible. We can use techniques in RL to solve this problem.
+
+*Differences between supervised/unsupervised vs RL:*
+
+* In RL, we have to make sequence of moves (actions or decisions), whereas in supervised or unsupervised settings, the prediction for one data point doesn't have any consequence on the next prediction (for the next data point). In RL, we don't make isolated decisions, we make sequential decisions.
+
+* In supervised/unsupervised learning, a decision doesn't affect future observations. In RL, an action chosen determines the next observation (the next state), and which squares (states) would be visited subsequently. Each action has consequences on the observation that we see in the future, i.e., actions affect future observations.
+
+* Reaching the goal state will fetch a reward (a scala quantity); Visiting intermediate squares (states) may or may not fetch reward. We may want to structure the reward in such a way that reaching G in fewer steps should give a higher reward. Therefore, an action has consequence in terms of rewards as well.
+
+.Types of Learning
+image::.\images\types_of_learning.png[align='center', 400, 300]
+
+== RL Framework ==
+There are two entities in RL: *Agent* and *Environment*. Environment is external to the agent; the agent interacts with the environment to generate the data. The environment gives out a state (observation), the agent sees the observation, and takes a particular action. As a response to that action, the environment gives another observation along with the rewards for the previous action. This cycle continues. By doing this, the agent learns a task.
+
+.RL framework
+image::.\images\rl_framework.png[align='center', 300, 200]
+
+* Observations are non i.i.d and are sequential in nature. The next observation depends on the action the agent took from the previous observation. So, the two observations (next the previous) are interlinked.
+
+* There is no supervisor; only reward signal (feedback)
+* Reward or feedback can be delayed
+
+*Example 02:* In the Tic-Tac-Toe game, say the agent is playing X. The observations will be the board positions which will be given by the environment. The actions will be placing X in any of the empty squares; the agent does the action. Then, the environment responds back with another observation. As the game proceeds, and all the squares are filled or one of the players win the game, a reward will be given by the environment. And there won't be any further observations from the environment.
+
+We then start a new game, and proceed as before. The learning from the previous iteration can be stored in the form of weight coefficients (the same that we do in neural network training with each batch of data).
+
+NOTE: The reward is structured by the environment. And the environment is designed by the modeller according to the task.
+
+== Components of RL ==
+
+. *Agent:* Executes action upon receiving observation. For taking an action, the agent receives an appropriate reward.
+
+. *Environment:* An external system that an agent can perceive and act on. Receives action from agent and in response emits appropriate reward and (next) observation.
+
+. *State:* State (or observation) can be viewed as a summary or an abstraction of the past history of the system. For example, in Tic-Tac-Toe, the state could be raw image or vector representation of the board.
+
+. *Reward:* Reward is a scalar feedback signal. Indicates how well an agent acted at a certain time. The agent's aim is to maximize cumulative reward.
+
+We look for challenges such as delayed feedback, credit assignment problem, stochastic environment, definition of reward function, data collection problem, and then appropriately structure the solution.
+
+NOTE: We deal with only single agent setting RL problems.
+
+== Historical Notes ==
+
+Learning by trial and error: Random actions by agent is similar to exploration. Reward obtained from doing random actions can be remembered in terms of updating the policy or value function. The learning comes from the reward. Examples of learning by trial and error: Thondrike's Cat psychophysical experiment.
+
+The law of effect (1898) states that any behaviour that is followed by pleasant consequences is likely to be repeated, and any behaviour that is followed by unpleasant consequences is likely to be stopped. The actions that result in pleasant consequences are given higher probability than other actions, over the time after learning.
+
+Through Pavlov's dog experiment, it is shown that there can be an element of time in learning. The idea of learning by trial and run and learning across time was combined into a method called *Temporal Difference*. Temporal difference learning is an approach to learning how to predict a quantity that depends on future values of a given signal. TD learning forms the basis of almost all RL algorithms that we see today.
+
+Markov Decision Process (Bellman, 1957) is used as a framework to model and solve sequential decision problem.
+
+The idea of Temporal difference and MDP were brought together by Watkins (1989) to propose the famous *Q-learning algorithm*. This forms our modern reinforcement learning. The modern RL also extends to using deep neural networks for learning sequential decision-making problems. Now, we are in the era of deep reinforcement learning.
+
+
+

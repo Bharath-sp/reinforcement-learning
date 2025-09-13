@@ -1,0 +1,182 @@
+= Value Iteration =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+We know that solving an MDP means finding an optimal value function stem:[V_*] or optimal action value function stem:[Q_*] or optimal policy stem:[\pi_*]. How do we find any of them?
+
+There are two algorithms:
+
+* Value iteration algorithm to find stem:[V_*]. With suitable modifications, we can use this algorithm to find stem:[Q_*] as well.
+* Policy iteration algorithm to find stem:[\pi_*]
+
+== Value Iteration for stem:[V_*] ==
+Value function stem:[V(s)] takes input stem:[s] and outputs a scalar. It is a mapping from state space to stem:[\mathbb{R}]. Say we are given an MDP with 20 states. We need to find the value for each of these states. Is there a way to arrive at stem:[V_*] starting from an arbitrary value function stem:[V_0]? For example, stem:[V_0(s) = 0 \, \forall s \in \mathcal{S}].
+
+The Bellman evaluation equation to evaluate a given policy stem:[\pi] at state stem:[s] is:
+
+[stem]
+++++
+V^{\pi}(s) = \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}(s') \right)
+++++
+
+Then we denote
+
+[stem]
+++++
+\begin{align*}
+\mathcal{P}^{\pi}(s' \, | \, s) & = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \, \mathcal{P}^{a}_{ss'}  \\
+
+\mathcal{R}^{\pi}(s) & =  \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \mathcal{R}_{ss'}^a = \mathbb{E}_{\pi} \left( r_{t+1} \, | \, S_t =s \right)
+\end{align*}
+++++
+
+which gives
+
+[stem]
+++++
+V^{\pi}(s) = \mathcal{R}^{\pi}(s) + \gamma \sum_{s'} \mathcal{P}^{\pi}(s' \, | \, s) V^{\pi}(s')
+++++
+
+Which can be written in matrix form as stem:[\mathbf{V}^{\pi} = \mathbf{R}^{\pi} + \gamma \mathbf{P}^{\pi} \mathbf{V}^{\pi}]. Solving for stem:[\mathbf{V}^{\pi}], we get
+
+[stem]
+++++
+\mathbf{V}^{\pi} = (\mathbf{I} - \gamma \mathbf{P}^{\pi})^{-1} \mathbf{R}^{\pi}
+++++
+
+For an MDP with stem:[n] states, Bellman Evaluation Equation for stem:[V^{\pi}(s)] is a system of stem:[n] linear equations with stem:[n] variables, and it can be solved if stem:[\mathbf{P}^{\pi}] and stem:[\mathbf{R}^{\pi}] are known.
+
+== Optimality Equation for State Value Function ==
+Can we have a recursive formulation for stem:[V_*(s)] as above?
+
+[stem, id=eq_1]
+++++
+\begin{align}
+V_*(s) = \max_{a \in \mathcal{A}} Q_*(s,a) = \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left( \mathcal{R}^a_{ss'} + \gamma V_*(s') \right) \right]
+\end{align}
+++++
+
+These equations are known as Bellman Optimality equations for state value function. These are also a system of stem:[n] equations with stem:[n] variables. But they are not linear equations as there is a max operator (a non-linear operator). So, we cannot use the same linear algebra method to solve it.
+
+Bellman optimality equations are non-linear. In general, there are no closed form solutions. Iterative methods are typically used to solve them.
+
+====
+*Bellman's Optimality Principle:* The tail of an optimal policy must be optimal.
+
+Which means
+
+Any optimal policy can be subdivided into two components; an optimal first action (which helps us reach stem:[s']),followed by an optimal policy from successor state stem:[s'].
+====
+
+Most of the problems of finding optimal solution typically have two characteristics:
+
+* Optimal substructure: Optimal solution can be constructed from optimal solution to subproblems.
+* Overlapping subproblems: Problem can be broken into subproblems and can be used several times.
+
+Markov Decistion Process, generally, satisfy both these characteristics. *Dynamic Programming* is a popular solution method for problems having such properties. Value iteration and policy iteration algorithms are methods in dynamic programming.
+
+== Value Iteration Algorithm ==
+Idea: Suppose we know the value stem:[V_*(s')], then the solution stem:[V_*(s)] can be found by one step look ahead
+
+[stem]
+++++
+V_*(s) \leftarrow \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left( \mathcal{R}^a_{ss'} + \gamma V_*(s') \right) \right]
+++++
+
+The core idea of value iteration is to perform the above updates iteratively on state stem:[s].
+
+image::.\images\value_iter_algo.png[align='left', 700, 400]
+
+We start with any initial value function. stem:[K] can be stem:[10^3, 10^6, \dots].
+
+Say we are at stem:[s]. Let's assume that stem:[V_1(s)=0 \, \forall s \in \mathcal{S}]. Therefore, stem:[V_1(s')=0]. We know stem:[\mathcal{P}^a_{ss'}], stem:[\mathcal{R}^a_{ss'}] and stem:[\gamma], so using the update equation, we can find stem:[V_2(s)]. From our initilization, stem:[V_1(s)] was 0, now, we have got an improved estimate of value at state stem:[s] at iteration 2.
+
+Consider the stem:[4 \times 4] grid world example. stem:[g] is the goal state.
+
+* The actions are stem:[\{\text{left}, \text{right}, \text{up}, \text{down}\}].
+* Reward is -1 on all transitions until the goal state is reached.
+* Deterministic environment and stem:[\gamma=1]
+
+.Value Iteration Algorithm Example
+image::.\images\value_iter_algo_eg.png[align='center']
+
+The update equation is
+
+[stem]
+++++
+V_{k+1}(s) \leftarrow \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left( \mathcal{R}^a_{ss'} + \gamma V_k(s') \right) \right]
+++++
+
+*Iteration 1*: Initialize stem:[V_1(s)=0, \forall s \in \mathcal{S}].
+
+*Iteration 2*: For every action that is permissible from state stem:[s], we calculate the quantity inside the square bracket. Consider the row 1, column 2 cell. From this state stem:[s12], we can either go left, right, or down:
+
+* The value of taking action 'left' at stem:[s12] is stem:[
+\mathcal{P}^{a}_{s12, s11} \left(\mathcal{R}^{a}_{s12, s11} + V_1(s11)\right) = 1 (-1 + 0) = -1].
+
+* The value of taking action 'right' at stem:[s12] is stem:[\mathcal{P}^{a}_{s12, s13} \left(\mathcal{R}^{a}_{s12, s13} + V_1(s13)\right) = 1 (-1 + 0) = -1].
+
+* The value of taking action 'down' at stem:[s12] is stem:[
+\mathcal{P}^{a}_{s12, s21} \left(\mathcal{R}^{a}_{s12, s21} + V_1(s21)\right) = 1 (-1 + 0) = -1].
+
+The maximum value of all these is -1. So, stem:[V_2(s12) = -1]. Similarly, we do the same thing for other states as well.
+
+*Iteration 3*:
+
+* The value of taking action 'left' at stem:[s12] is stem:[
+\mathcal{P}^{a}_{s12, s11} \left(\mathcal{R}^{a}_{s12, s11} + V_2(s11)\right) = 1 (-1 + 0) = -1].
+
+* The value of taking action 'right' at stem:[s12] is stem:[\mathcal{P}^{a}_{s12, s13} \left(\mathcal{R}^{a}_{s12, s13} + V_2(s13)\right) = 1 (-1 + -1) = -2].
+
+* The value of taking action 'down' at stem:[s12] is stem:[
+\mathcal{P}^{a}_{s12, s21} \left(\mathcal{R}^{a}_{s12, s21} + V_2(s21)\right) = 1 (-1 + -1) = -2].
+
+The maximum value of all these is -1. So, stem:[V_3(s12) = -1]. Similarly, we do the same thing for other states as well.
+
+We repeat this procedure 7 times. In iteration 8, we observe the values for all the states to be the same as stem:[V_7(s)] for all stem:[s]. This indicates convergence is achieved, so we end the algorithm here. stem:[V_7(s) = V_*(s)] is the optimal state value function for the given MDP.
+
+For this example, stem:[V_*(s)] indicates the expected number of steps to reach the goal state from stem:[s] if we follow the optimal policy stem:[\pi_*].
+
+=== Remarks ===
+
+* For any MDP, the sequence of value functions stem:[\{V_1, V_2, \dots,\}] will converge.
+* It will converge to stem:[V_*].
+* This convergence is independent of the initial choice stem:[V_1], so it doesn't matter what initialization we start off with.
+
+These three statements can be proved using Banach Fixed Point Theorem / Contraction Mapping Theorem.
+
+* Once we get stem:[V_*(s)], we can get an optimal (deterministic) policy stem:[\pi_*] by taking greedy with respect to stem:[V_*]. In fact, we can stop at any intermediate step stem:[V_k(s)] and get a policy
++
+[stem]
+++++
+\pi_{k+1}(s) \leftarrow \text{greedy}(V_k(s))
+++++
+
+
+In the value iteration algorithm, we are not given any policy stem:[\pi]. The objective was to find the optimal value function for the given MDP. But when given a policy stem:[\pi], we can use the (modified) value iteration algorithm to find stem:[V^{\pi}(s)]. Instead of using the linear algebra formulation, we can also use this recursive formulation to find stem:[V^{\pi}(s)]. Using the value iteration algorithm:
+
+* To find stem:[V^{\pi}(s)], we use the Bellman Evaluation equation in the update step
+* To find stem:[V_*(s)], we use the Bellman Optimality equation in the update step
+
+== Optimality Equation for Action Value Function ==
+There is a recursive formulation for stem:[Q_*(\cdot, \cdot)]. For any action-value function
+
+[stem]
+++++
+Q^{\pi}(s, a) = \sum_{s'} \mathcal{P}^{a}_{ss'} \left[ \mathcal{R}_{ss'}^a + \gamma \sum_{a'} \pi(a' \, | \, s') \, Q^{\pi}(s', a') \right] 
+++++
+
+For the optimal action-value function, this becomes:
+
+[stem]
+++++
+Q_*(s, a) = \sum_{s' \in \mathcal{S}} \mathcal{P}^{a}_{ss'} \left[ \mathcal{R}_{ss'}^a + \gamma \max_{a'} \, Q_*(s', a') \right] 
+++++
+
+We could similarly conceive an iterative algorithm by changing the update step of the value iteration algorithm using the above recursive formulation to compute the optimal stem:[Q_*]. In fact, we can show that this algorithm also converges.
+
+
+
