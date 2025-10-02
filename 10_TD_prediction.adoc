@@ -1,4 +1,4 @@
-= Temporal Difference Methods =
+= Temporal Difference Prediction Methods =
 :doctype: book
 :stem: latexmath
 :eqnums:
@@ -32,6 +32,8 @@ V^{\pi}(s) := \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, 
 ++++
 
 We begin by initializing stem:[V(s) = 0 ; \forall s \in \mathcal{S}], which serves as the initial estimate for all states, including stem:[V(s_{t+1})]. Combining this estimate with the observed reward stem:[r_{t+1}] yields one sample of stem:[G_t]. By repeating this process - we obtain several such samples, which can then be used to form an updated estimate of stem:[V^{\pi}(s)].
+
+Here we do bootstrapping: we use an old estimate of stem:[V(s')] to get a new estimate of stem:[V(s)].
 
 *Incremental Calculation of Mean:*
 
@@ -175,9 +177,10 @@ In TD(0) algorithm, we don't traverse the full length of the tree unlike the MC 
 
 TD(0) algorithm:
 
-* Uses experience (samples) without model like MC
+* Uses experience (samples) without model like MC.
 * Bootstraps like DP: Uses an old estimate of stem:[V(s')] to get a new estimate of stem:[V(s)].
-* Suited for online learning. As we go from stem:[s] to stem:[s'], we can make an update to stem:[s]. This is referred to as online learning. In MC algorithms, we should traverse the whole trajectory to make an update to stem:[s]. MC is more suited when there are trajectories readily available. Thus, MCs are suitable for offline learning.
+* TD method can work with partial sequences. Unlike MC methods, it doesn't need complete sequences.
+* Suited for online learning. As soon as we go from stem:[s] to stem:[s'], we can make an update to stem:[V(s)]. This is referred to as *online learning*. In MC algorithms, we should traverse the whole trajectory (wait for the whole trajectory to end) to make an update to stem:[V(s)]. This is known as *offline learning*. MC is more suited when there are trajectories readily available. Thus, MCs are suitable for offline learning.
 
 *Connection between MC error and TD error:*
 
@@ -189,3 +192,5 @@ TD(0) algorithm:
 ++++
 G_t - V(s_t) = \sum_{k=0}^{T-t-1} \gamma^k \delta_{t+k}
 ++++
+
+NOTE: TD methods can be used to evaluate stem:[Q^{\pi}] as well instead of stem:[V^{\pi}].

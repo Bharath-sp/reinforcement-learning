@@ -1,0 +1,189 @@
+= Temporal Difference Control =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Evaluation of stem:[Q] function ==
+In the Monte Carlo control, we did policy evaluations using First-visit or every-visit Monte Carlo methods. Here in TD control, we do policy evaluations using the TD methods.
+
+* Apply TD to evaluate stem:[Q(s,a)] in the evaluation step
+* Use stem:[\epsilon-] greedy policy improvement
+
+The action-value function stem:[Q(s,a)] under policy stem:[\pi] is the expected return starting from state stem:[s] and taking action stem:[a], and then following the policy stem:[\pi] from the next state:
+
+[stem]
+++++
+\begin{align*}
+Q^{\pi}(s,a) & = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s, A_t = a \right) \\
+& = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma Q^{\pi}(s_{t+1}, a_{t+1})  \, | \, S_t = s, A_t = a \right)
+\end{align*}
+++++
+
+The Bellman decomposition equation makes the assumption that the underlying stochastic sequence satisfies the Markov property. Using this decomposition equation to evaluate stem:[Q^{\pi}] using samples is the TD method.
+
+For a given policy stem:[\pi], the update step in the DP policy iteration algorithm is given by
+
+[stem]
+++++
+Q_{k+1}(s, a) \leftarrow \sum_{s'} \mathcal{P}^{a}_{ss'} \left[ \mathcal{R}_{ss'}^a + \gamma \sum_{a'} \pi(a' \, | \, s') \, Q_k(s', a') \right]
+++++
+
+And we know that stem:[Q_k \to Q^{\pi}]. In a model-free setting, we use the TD approximation.
+
+Given a policy stem:[\pi], suppose we are at stem:[s_t]. We take the action stem:[a_t] prescribed by stem:[\pi], get a reward of stem:[r_{t+1}], and move to stem:[s_{t+1}]. The transition is stem:[(s_t, a_t, r_{t+1}, s_{t+1})]. At stem:[s_{t+1}], we again sample stem:[a' \sim \pi(s_{t+1}, \cdot)], and perform the following update
+
+[stem]
+++++
+Q(s_t,a_t) \leftarrow Q(s_t,a_t) + \alpha_t \left[ r_{t+1} + \gamma Q(s_{t+1}, a') - Q(s_t,a_t) \right] 
+++++
+
+Once we reach stem:[s_{t+1}], we ask the policy stem:[\pi] for the action to take. We then read out the old value for stem:[Q(s_{t+1}, a')] for the prescribed action stem:[a'] to perform the update step. We don't take the action stem:[a'] and evaluate it.
+
+This method of evaluating the value of the policy, stem:[Q^{\pi}], is known as SARSA as there is a sequence of state stem:[s_t], action stem:[a_t], reward stem:[r_{t+1}], state stem:[s_{t+1}], and action stem:[a'].
+
+* Here, the action stem:[a'] is sampled from policy stem:[\pi]. So, we are evaluating stem:[Q^{\pi}] using the samples from policy stem:[\pi]. This is on-policy version of evaluating stem:[Q^{\pi}], and SARSA typically refers to this.
+
+* We can also sample actions from a different policy stem:[a_t \sim \mu(s_t, \cdot)]. This is the off-policy version of evaluating stem:[Q^{\pi}]. To do this, we need to multiply the term inside the square brackets by suitable importance sampling factor.
+
+These two (on policy and off policy) versions converges to the true stem:[Q^{\pi}] under similar conditions as TD methods for stem:[V^{\pi}]:
+
+* State and action spaces are finite
+* All state-action pairs are visited infinitely often
+* Learning rate schedule stem:[\alpha_t] obeys the Robbins-Monroe condition: stem:[\sum_t \alpha_t = \infty], and stem:[\sum_t \alpha_t^2 < \infty].
+
+== Policy Improvement ==
+Once we find the value of stem:[Q^{\pi}(s,a)] for all state-action pairs, we take stem:[\epsilon-] greedy with respect to stem:[Q^{\pi}]. In practice, we usually don't wait for the iterations to converge to the true stem:[Q^\pi] in the evaluation step. Along every episode, we interleave one step of policy evaluation (take the above update step only once) followed by stem:[\epsilon-] greedy with stem:[\epsilon-] decay policy improvement.
+
+.Optimistic Policy iteration Framework
+image::.\images\glie_policy_iteration.png[align='center', 500, 300]
+
+== SARSA: On-Policy Control Algorithm ==
+The objective is to find stem:[Q_*, \pi*]. Policy is always stem:[\epsilon-] greedy with stem:[\epsilon-] decay. Being at stem:[s_t], we don't roll out the full trajectory like in MC algorithms, we do online learning. As soon as we generate the tuple stem:[(s_t, a_t, r_{t+1}, s_{t+1}, a_{t+1})], we perform an update to stem:[Q] and update the policy.
+
+The inputs are:
+
+* Learning rate stem:[\alpha \in (0,1\]]
+* Discount factor stem:[\gamma \in [0,1\]]
+* Exploration parameter stem:[\epsilon]. We start with stem:[\epsilon=1] and decay it at each step in the episode.
+* Initialize stem:[Q(s,a)] arbitrarily for all stem:[s \in \mathcal{S}, a\in \mathcal{A}] (often 0).
+
+*Algorithm Steps:*
+
+. Start in the initial state stem:[s_0] from the environment's start distribution.
+. Choose initial action stem:[a_0 \sim \pi_0(\cdot \, | \, s_0)] which is the initial stem:[\epsilon-] soft policy.
+
+. For each step in the episode stem:[t=0,1,\dots] until terminal:
+
+.. Take (execute) action stem:[a_t]
+.. Observe reward stem:[r_{t+1}] and move to next state stem:[s_{t+1}]
+.. Choose next action stem:[a_{t+1} \sim \pi_t(\cdot \, | \, s_{t+1})]. We have the tuple stem:[(s_t, a_t, r_{t+1}, s_{t+1})] generated.
+.. Update stem:[Q(s_t, a_t)] using the SARSA update rule. Note after an update, the stem:[Q] value is changed only for one state-action pair, and it remains the same for other state-action pairs. This is the policy evaluation step.
+.. stem:[\pi_{t+1}]: stem:[\epsilon-] greedy with respect to the updated stem:[Q(s, a)] is taken. This is the policy improvement step.
+
+. Decay stem:[\epsilon] according to the decaying schedule
+. Repeat for multiple episodes
+
+.SARSA Update step
+image::.\images\sarsa_algo_01.png[align='center', 600, 300]
+
+For each step stem:[t] in the episode, the policy is evaluated and improved.
+
+image::.\images\sarsa_algo_02.png[align='left', 600, 300]
+
+Eventually, this algorithm will converge to stem:[Q_*] under the three conditions mentioned above. By being (full) greedy with respect to stem:[Q_*], we can find the optimal policy stem:[\pi_*].
+
+NOTE: Here we are working in a setting where the state and action spaces are finite. So, stem:[Q(s,a)] is a matrix.
+
+== Q-learning - Off-Policy Control Algorithm ==
+We know that for a given policy stem:[\pi], the optimal stem:[Q] function is:
+
+[stem]
+++++
+Q^{\pi^*}(s,a) = Q_*(s,a) := \max_{a} Q^{\pi}(s,a)
+++++
+
+The Bellman optimality equation is given by:
+
+[stem, id='eq_1']
+++++
+\begin{align}
+Q_*(s, a) & = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma \max_{a'} Q_*(s_{t+1}, a')  \, | \, S_t = s, A_t = a \right] \\
+& = \sum_{s' \in \mathcal{S}} \mathcal{P}^{a}_{ss'} \left[ \mathcal{R}_{ss'}^a + \gamma \max_{a'} \, Q_*(s', a') \right]  \nonumber \\
+\end{align}
+++++
+
+If we have the knowledge of the model, we can use the iterative DP approximation:
+
+[stem]
+++++
+Q_{k+1}(s,a) \leftarrow \sum_{s' \in \mathcal{S}} \mathcal{P}^{a}_{ss'} \left[ \mathcal{R}_{ss'}^a + \gamma \max_{a'} \, Q_k(s', a') \right]
+++++
+
+Eventually, stem:[Q_k \to Q_*].
+
+NOTE: In the SARSA algorithm, we use the Bellman evaluation equation and explicitly do the improvement step.
+
+The Q-learning algorithm differs from the SARSA algorithm only in the update step. In the Q-learning algorithm, we use <<eq_1, Equation 1>>, the Bellman optimality equation, as the target in the update step. We don't explicitly evaluate stem:[Q^{\pi}], instead we directly evaluate stem:[Q^{\pi^*}]. We sample the trajectories from the policy stem:[\pi], and use it to evaluate stem:[Q^{\pi^*}]. Hence, this is an off-policy algorithm. Here stem:[\pi_*] is the target policy and stem:[\pi] is the behavior policy.
+
+* The (behavior) policy stem:[\pi] is always a stem:[\epsilon-] greedy with respect to stem:[Q(s,a)] with an stem:[\epsilon-] decay schedule.
+* The (target) policy is greedy with respect to stem:[Q(s,a)]
+
+Given a trajectory segment stem:[(s_t, a_t, r_{t+1}, s_{t+1})] generated by the stem:[\epsilon]- greedy policy, we update stem:[Q_*].
+
+image::.\images\q_learning_algo.png[align='left', 600, 400]
+
+Unlike in SARSA, we don't sample stem:[a'] from the policy. We look at all the actions, and read out the (full) greedy action with respect to the current stem:[Q]. We evaluate a greedy policy stem:[\pi_*] using the samples from the stem:[\epsilon]- greedy policy stem:[\pi].
+
+. Initialize stem:[Q(s,a)] for all state-action pairs (commonly to 0)
+. At state stem:[s_t], select an action stem:[a_t] using an stem:[\epsilon-] greedy policy.
+. Execute stem:[a_t]. Observe the reward stem:[r_{t+1}] and the next state stem:[s_{t+1}]
+. Apply the Q-learning update rule
+. Set stem:[s_t \leftarrow s_{t+1}]
+. Repeat from Step 2 until the episode ends (terminal state or time limit)
+. Continue the process over many episodes until the Q-values converge or performance stabilizes.
+
+The policy that emerges when the Q-table converges is the optimal policy: stem:[\pi_*(s) = \arg \max_a Q(s,a)].
+
+CAUTION: Q-learning is an off-policy but online learning algorithm. Both SARSA and Q-learning are online learning algorithm.
+
+== Summary ==
+
+*Backup Diagrams for SARSA and Q-Learning:*
+
+image::.\images\sarsa_vs_q.png[align='center', 300, 200]
+
+To make an update to stem:[Q(s,a)]:
+
+* In SARSA, both the actions stem:[A, A'] are sampled from the policies. Once we generate the trajectory stem:[(s_t, a_t, r_{t+1}, s_{t+1}, a_{t+1})], we make an update.
+* In Q-learning, the action stem:[A] is from the behavior policy and action stem:[A'] is the greedy action with respect to the current stem:[Q(s,a)]. Once we generate the trajectory stem:[(s_t, a_t, r_{t+1}, s_{t+1})], we make an update.
+
+TD control methods have several advantages over MC control methods: Lower variance, online, partial sequences.
+
+== Closing Notes ==
+Through the Thondrike's cat experiment, it shown that trying out all the possible action is the best thing to do when we don't have enough knowledge. stem:[\epsilon-] greedy policies helps us to explore all the possible actions.
+
+In Pavlov's dog experiment, the dog starts salivating in anticipation of food once it is shown the tuning fork. The dog associates the state with a future reward. In the TD methods, we evaluate the value of the current state stem:[V(s)] by considering the value of the state which is going to come later stem:[V(s')].
+
+[stem]
+++++
+V(s) \leftarrow V(s) + \alpha \left[ r + \gamma V(s') - V(s) \right]
+++++
+
+Through this experiment, it is shown that we learn something across time.
+
+*Afterstates:*
+
+The idea of afterstates is mainly useful in games. Consider the game of tic-tac-toe. The states are the board positions, and moves are the actions. Suppose there are two board positions (as on the top row), and we take the action shown next to them. The resultant state will be the same for both (as on the bottom row).
+
+A conventional action value function stem:[Q(s,a)] would map or learn about the two state-action pairs on the top row separately. That is, if we move from stem:[A] to stem:[C], the state-action in A is updated. And if we move from stem:[B] to stem:[C], the state-action in B is updated.
+
+image::.\images\afterstates.png[align='center', 400, 300]
+
+From both state-action pair stem:[A] and stem:[B], we come to the same state stem:[C] (afterstate). From state C, irrespective of the previous states, the game tree will be the same. So any learning about the state-action pair on the left (A) would immediately transfer to the pair on the right (B).
+
+We can implement an afterstate value function which would update both the state-action pairs stem:[A] and stem:[B] after we reach state in stem:[C]. An afterstate value function is a function that updates all the state-action pairs that result in the same afterstate. Implementing this in our algorithm makes the learning and convergence faster.
+
+
+
+

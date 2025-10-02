@@ -1,0 +1,189 @@
+= Monte Carlo Control =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Evaluation of stem:[Q] function ==
+Given a policy stem:[\pi], to evaluate stem:[Q^{\pi}(s,a)] for some given state stem:[s] and action stem:[a], repeat the following over several episodes:
+
+* The first time stem:[t] that stem:[S_t=s] and action stem:[a] taken at stem:[s] in the episode:
+.. Increment counter for number of visits to stem:[s] and taken action stem:[a]: stem:[N(s,a) \leftarrow N(s,a) + 1]
+.. Increment the running sum of total returns with return from current episode: stem:[S(s,a) \leftarrow S(s,a) + G_t]
+
+Then, the (First Visit) Monte Carlo estimate of action value function stem:[Q(s,a) \leftarrow \frac{S(s,a)}{N(s,a)}]. Similarly, we can have every visit MC estimate as well.
+
+The main drawbacks of this algorithm are:
+
+. Many state-action pairs may never be visited. This problem was present in evaluating stem:[V^{\pi}] as well, but there we were focusing only at the state space. But here we need to look at state x action space. So the problem gets amplified. If many stem:[(s,a)] are never visited, then stem:[Q(s,a)] will always be 0 for those stem:[(s,a)] (initial value). At state stem:[s], suppose we can take 10 actions, but we may generate samples with only 1 or 2 actions at stem:[s]. In such cases, it will be difficult to find the optimal action at stem:[s] as only few state-action pairs are explored.
+
+. If policy stem:[\pi] is deterministic, things get even worse. Because at stem:[s], we would always take the same action. So, we will never be able to evaluate stem:[Q^{\pi}] properly when the policy is deterministic.
+
+== Exploring Starts Assumption ==
+Every state-action pair has a nonzero probability of being chosen as the starting point of an episode. Every episode begins with a randomly selected stem:[(s,a)] and because each stem:[(s,a)] has nonzero probability of being selected, over infinitely many episodes, every stem:[(s,a)] will be visited infinitely often at the very first step.
+
+So this assumption guarantees that all state-action pairs will be visited an infinite number of times in the limit of an infinite number of episodes. But in reality, we can't set arbitrarily to any stem:[(s,a)]. Not a realistic assumption at all. But let's assume it for a while. With ES assumption and in the limit of infinite episodes, first or every visit MC algorithm will converge to stem:[Q^{\pi}].
+
+Under this assumption, we can frame the control algorithm in the following way:
+
+. We start with a random initial policy stem:[\pi_1].
+. Evaluate stem:[Q^{\pi_1}]. Under the ES assumption, the MC policy evaluation iterations will converge to true stem:[Q^{\pi_1}].
+. Get an improved policy stem:[\pi_2] by being greedy with respect to stem:[Q^{\pi_1}].
++
+[stem]
+++++
+\pi_2 = \arg \max_a Q^{\pi_1}(s,a)
+++++
+. Repeat step 2 and 3.
+
+Eventually, we will converge to stem:[Q_*] and stem:[\pi_*].
+
+.Monte Carlo Control algorithm framework
+image::.\images\mc_control_01.png[align='center', 400, 300]
+
+== Monte Carlo Control with ES ==
+
+.Monte Carlo Control with ES algorithm
+image::.\images\mc_control_02.png[align='left', 600, 300]
+
+Every episode begins with a randomly selected stem:[(s,a)], and then policy stem:[\pi_k] is followed. There are two ways to organize policy improvement:
+
+* Batch / Converged stem:[Q]: In theory, we could wait until stem:[Q] estimates converge (with infinitely many samples), then take the greedy policy with respect to the converged stem:[Q]. In this case, step 3 and 4 of the algorithm will be repeated multiple times.
+
+* Incremental / on-the-fly: In practice, we improve the policy after each episode, alternating between (imperfect) evaluation and improvement. But still guaranteed to converge to stem:[Q_*] and stem:[\pi_*] because every stem:[(s,a)] is explored infinitely often at the first step under ES assumption. Therefore, we don't have to wait until the convergence to stem:[Q^{\pi_k}] in the policy evaluation step.
+
+*Problem:* When we do greedy improvement, the resulting policy stem:[\pi_{k+1}] will be a deterministic policy. So in the next iteration, the ES assumption is violated or difficult to maintain. So is it good to be always greedy? Being greedy is good only when we have enough knowledge about all the actions at a particular state stem:[s]. To get enough knowledge, we need to explore and improve our learning.
+
+IMPORTANT: In the DP algorithms, being full greedy is not a problem because we don't have the necessity to explore as we have the whole knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}].
+
+== stem:[\epsilon-] Greedy Exploration ==
+stem:[\epsilon-] Greedy Exploration method is the simplest idea for ensuring continual exploration: it gives us a simple policy that allows us to explore.
+
+Suppose there are stem:[m] total actions we can take at any state and stem:[\epsilon \in [0,1\]]:
+
+* With probability stem:[1 - \epsilon], choose the greedy action.
+* With probability stem:[\epsilon], choose an action uniformly at random.
+
+So, the greedy action has a probability of stem:[\frac{\epsilon}{m} + 1 - \epsilon], and other actions have a probability of stem:[\frac{\epsilon}{m}].
+
+[stem]
+++++
+\pi(a \, | \, s) = \begin{cases}
+\frac{\epsilon}{m} + 1 - \epsilon, & \text{ if } a = \arg \max_{a'} Q(s,a') \\
+\frac{\epsilon}{m}, & \text{ otherwise}
+\end{cases}
+++++
+
+This policy is known as stem:[\epsilon-] greedy policy. With this policy, every action has a probability of at least stem:[\frac{\epsilon}{m}] of being selected. In general, a policy that assigns at least stem:[\frac{\epsilon}{m}] to every action is called stem:[\epsilon-] soft, i.e., stem:[\pi(a \, | \, s) \geq \frac{\epsilon}{m}] for all stem:[a \in \mathcal{A}]. The stem:[\epsilon-] greedy policy is an example of stem:[\epsilon-] soft policies.
+
+In the DP policy iteration algorithm, with the policy improvement theorem, we proved that the greedy policy improvement over stem:[V^{\pi}] gives us a policy stem:[\pi'] that is at least as good as policy stem:[\pi].
+
+=== stem:[\epsilon-] Greedy Policy Improvement ===
+Suppose we have an stem:[\epsilon-] soft policy stem:[\pi], and its stem:[Q^{\pi}] evaluated. The stem:[\epsilon-] greedy policy stem:[\pi'] with respect to stem:[Q^\pi] is an improvement over stem:[\pi], that is, stem:[V^{\pi'}(s) \geq V^{\pi}(s)]. The stem:[\epsilon] value for both the policies stem:[\pi] and stem:[\pi'] should be the same.
+
+*Proof:*
+
+image::.\images\epsilon_greedy_proof.png[align='left', 600, 300]
+
+. stem:[Q^{\pi}(s, \pi'(s))]: We are at state stem:[s], and take an action prescribed by stem:[\pi']. Once we reach stem:[s'], we follow the policy stem:[\pi]. This will be equal to the weighted average of stem:[Q^{\pi}(s,a)] where the weights are the probabilities of actions as per stem:[\pi'] at stem:[s] (in the RHS).
+
+. We use the fact that stem:[\pi'] is stem:[\epsilon-] greedy with respect to stem:[Q^{\pi}].
+
+. Just multiplying by stem:[\frac{1-\epsilon}{1-\epsilon}] in the second term.
+
+. Using the fact that stem:[\sum_a \pi(a \, | \, s) = 1]. Thus stem:[1-\epsilon = \sum_a \left( \pi(a \, | \, s) - \frac{\epsilon}{m} \right)].
+
+. Using the fact that stem:[\pi] is not just any policy but it is stem:[\epsilon-] soft, so the numerator term stem:[\pi(a \, | \, s) - \frac{\epsilon}{m} \geq 0]. The weight coefficients stem:[\frac{\pi(a \, | \, s) - \frac{\epsilon}{m}}{1-\epsilon} \geq 0] and they sum up to 1. The term
++
+[stem]
+++++
+\sum_a \frac{\pi(a \, | \, s) - \frac{\epsilon}{m}}{1-\epsilon} Q^{\pi}(s,a)
+++++
++
+is a convex combination of stem:[Q^{\pi}(s,a)]. Any convex combination (a type of linear combination) of a set of numbers will be stem:[\leq] to the maximum of the numbers. Suppose there are two numbers stem:[a] and stem:[b]. Compute stem:[c_1 a + c_2 b] where stem:[c_1, c_2 \geq 0] and stem:[c_1 + c_2 =1]. Then stem:[c_1 a + c_2 b \leq c_1 \max(a,b) + c_2 \max(a,b) = \max(a,b)].
+
+. Re-arranging and cancelling terms.
+
+Then, we have stem:[Q^{\pi}(s, \pi'(s)) \geq V^{\pi}(s)]. This is the necessary condition in the policy improvement theorem to show policy stem:[\pi'] is better than policy stem:[\pi]. Therefore, stem:[V^{\pi'}(s) \geq V^{\pi}(s)] from the policy improvement theorem.
+
+== GLIE ==
+Greedy in the Limit with Infinite Exploration. GLIE is the main practical replacement for the unrealistic exploring starts assumption in Monte Carlo control and other RL algorithms.
+
+*Definition of GLIE:*
+
+A sequence of policies stem:[\{\pi_k\}] is called Greedy in the Limit with Infinite Exploration (GLIE) if it satisfies two conditions:
+
+* Infinite Exploration: Every state-action pair stem:[(s,a)] is visited infinitely often as stem:[k \to \infty].
++
+That is, stem:[N_k(s,a) \to \infty] for all stem:[(s,a)] where stem:[N_k(s,a)] is the number of times stem:[(s,a)] has been seen up to iteration stem:[k].
+
+* Greedy in the limit: The policy gradually becomes greedy with respect to the action-value estimate stem:[Q_k(s,a)] in the limit as stem:[k \to \infty]. Formally,
++
+[stem]
+++++
+\lim_{k \to \infty} \pi_k(a \, | \, s) = \begin{cases}
+1 & \text{ if } a = \arg \max_{a'} Q_k(s,a'), \\
+0 & \text{ otherwise }
+\end{cases}
+++++
++
+The sequence of policies stem:[\{\pi_1, \pi_2, \dots\}] should converge to a purely greedy policy.
+
+A common way (one of the possible ways) to achieve GLIE is to use an stem:[\epsilon-] greedy policies with stem:[\epsilon] decaying to 0 asymptotically. At iteration stem:[k], we take stem:[\epsilon-] greedy with respect to the estimate stem:[Q_k]:
+
+[stem]
+++++
+\pi_{k+1}(a \, | \, s) = \begin{cases}
+1 - \epsilon_k + \frac{\epsilon_k}{m}, & \text{ if } a = \arg \max_{a'} Q_k(s,a') \\
+\frac{\epsilon_k}{m}, & \text{ otherwise.}
+\end{cases}
+++++
+
+where stem:[m = |\mathcal{A}(s)|]. If stem:[\epsilon_k \to 0] slowly enough, then:
+
+* Early on: with stem:[\epsilon] value close to 1, exploration is ensured (learning phase)
+* Later: Policy becomes greedy (stem:[\epsilon_k \to 0])
+
+A typical choice is stem:[\epsilon_k = \frac{1}{k} \text{ or } \frac{1}{\sqrt{k}}]. stem:[\epsilon_k] kind of characterizes how much we explore. The optimistic GLIE policy iteration framework is given by
+
+.Optimistic Policy iteration Framework
+image::.\images\glie_policy_iteration.png[align='center', 500, 300]
+
+It is said optimistic because we don't wait till convergence in the policy evaluation step, and we take stem:[\epsilon-] greedy instead of full greedy in the policy improvement step. For every episode:
+
+* Monte Carlo policy evaluation, we come up with an estimate stem:[Q]
+* Policy improvement using stem:[\epsilon-] greedy with stem:[\epsilon-] decay.
+
+Eventually, we will converge to stem:[Q_*, \pi_*]. The optimal policy stem:[\pi_*] will be full greedy with respect to stem:[Q_*].
+
+With this framework, we can get rid of the Exploring starts assumption. In theory, exploring starts guarantees infinite exploration. In practice, we can't restart episodes arbitrarily, so GLIE is used instead.
+
+With GLIE, it can be seen that at state stem:[s], every action is picked infinitely many times across infinite iterations. If we sum up the probabilities of choosing a given action stem:[a] at stem:[s] over iterations:
+
+[stem]
+++++
+\sum_{k=1}^\infty \frac{\epsilon_k}{|\mathcal{A}(s)|}
+++++
+
+This represents the expected number of times that action gets tried at stem:[s]. For infinite exploration, the series stem:[\sum_{k=1}^\infty \epsilon_k] must diverge. Examples of such schedules are:
+
+* If stem:[\epsilon_k = \frac{1}{k}], then stem:[\sum_{k=1}^\infty \frac{1}{k} = \infty]. Harmonic series diverges, so infinite exploration is guaranteed with infinite iterations.
+
+* If stem:[\epsilon_k = \frac{1}{k^2}], then stem:[\sum_{k=1}^\infty \frac{1}{k^2} < \infty]. Exploration dies too fast, so infinite exploration is not guaranteed even with infinite iterations.
+
+=== GLIE Monte Carlo Control Algorithm ===
+
+image::.\images\glie_monte_carlo.png[align='left', 700, 400]
+
+In step 2, we essentially create an stem:[\epsilon-] soft initial policy as stem:[Q(s,a) = 0] for all states initially. That is, at stem:[s], all the actions have equal probability of being selected. This is a good exploration policy to start with.
+
+Each episode start from the environment's natural start state (e.g., the starting position in Grid world, the initial deal in Blackjack, the reset state in a simulator). Then, the action prescribed by the stem:[\epsilon-] greedy policy at stem:[s] is taken. As the algorithm progresses, stem:[\epsilon \to 0], it tries to have a trade-off between exploration and exploitation. Asymptotically, this algorithm is guaranteed to converge to the optimal stem:[Q_*, \pi_*].
+
+NOTE: We don't do random state-action initialization as in the MC with ES algorithm.
+
+
+
+
+
+
+

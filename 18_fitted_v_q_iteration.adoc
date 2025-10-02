@@ -1,0 +1,116 @@
+= Fitted V Iteration =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Monte Carlo based Value Function Fitting ==
+Consider a MDP with a finite horizon stem:[H] or with an episodic setting. Given a policy stem:[\pi], say we rolled out stem:[M]trajectories, then the estimate of stem:[V^{\pi}(s)] can be written as: 
+
+[stem]
+++++
+V^{\pi}(s) \approx \frac{1}{m} \left[  \sum_{i=1}^M  \left[ \sum_{k=0}^H \left( \gamma^k r^i_{t+k+1} \, | \, S_t = s  \right) \right] \right]
+++++
+
+stem:[H] is a constant in a finite horizon setting and a random variable in an episodic setting. To roll out many trajectories from stem:[s], we need to reset the simulator back to state stem:[s] each time. It is not always possible. So, as an alternate, we arbitrarily sample many states, and roll out a single trajectory from each state. We get a single sample estimate stem:[V^{\pi}(s)] for each state stem:[s] (high variance, but OK). This way we collect training data for as many states as possible and regress thereafter.
+
+[stem]
+++++
+\left(s_i, \left[ \sum_{k=0}^H \left( \gamma^k r^i_{t+k+1} \, | \, S_t = s_i  \right) \right] \right) = (s_i, y_i)
+++++
+
+NOTE: Here stem:[H] can vary for each trajectory. And stem:[y_i] is a single sample estimate of stem:[V^{\pi}(s_i)].
+
+image::.\images\monte_carlo_schema.png[align='center', 500, 300]
+
+image::.\images\mc_value_fitting_algo.png[align='left', 600, 400]
+
+stem:[\boldsymbol{\phi}] are the parameters of the model, that is, stem:[V^{\pi}(s_i)] is a function of stem:[s_i] parameterized by stem:[\boldsymbol{\phi}]. During training, when we do gradient descent, stem:[\boldsymbol{\phi}] are updated. As a result, stem:[V^{\pi}_{\boldsymbol{\phi}}(s_i)] will be updated. As the training progresses, the gradient descent guarantees that the parameters will converge to a local optimum. But the resulting stem:[V^{\pi}_{\boldsymbol{\phi}}(s_i)] may not be the true stem:[V^{\pi}(s_i)]. The convergence to the true stem:[V^{\pi}(s_i)] is not guaranteed. This is the typical scenario even in the supervised ML setting; we try to reduce the error as much as we can but can't get the exact true function.
+
+NOTE: MSE loss function is used, but we can use any other loss functions as well.
+
+Monte Carlo based methods need complete sequences, so they are suitable only for episodic tasks.
+
+== TD based Value Function Fitting ==
+Consider a MDP with finite, indefinite, or infinite horizon. Given a policy stem:[\pi], we observe transition stem:[(s,a,r, s')] at time stem:[t]. Using the one-step look-ahead, the value of state stem:[s] under stem:[\pi] is
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ r + \gamma V^{\pi}(s') \, | \, S_t = s \right] \\
+& \approx r + \gamma V^{\pi}(s') \,\, \text{ (one sample)}
+\end{align*}
+++++
+
+How can we construct sample pairs stem:[(s_i, y_i)] here?
+
+We initialize the function approximator (the model - may be neural network) with random weights and biases. For a given state representation, it outputs stem:[V^{\pi}(s)].
+
+image::.\images\fitted_v_iter_01.png[align='center', 300, 200]
+
+At state stem:[s], we take an action stem:[a] as suggested by the policy, get a reward stem:[r], and move to stem:[s']. We feed this stem:[s'] to the (random) initialized neural network to get stem:[V_{\phi_0}^{\pi}(s')]. The parameters of this network are governed by stem:[\phi_0]. These two give us an approximate value of stem:[V^{\pi}(s) \approx r + \gamma V_{\phi_0}^{\pi}(s')]. We consider this as stem:[y_i = r + \gamma V_{\phi_0}^{\pi}(s')] to get
+
+[stem]
+++++
+\left( s_i, r + \gamma V_{\phi_0}^{\pi}(s_i') \right) = (s_i, y_i)
+++++
+
+We repeat this for arbitrary stem:[K] states in the state space to get stem:[K] such input-output pairs. Once the data is collected, we can perform the regression.
+
+image::.\images\td_fitted_v_algo.png[align='left', 700, 400]
+
+Here stem:[N] is the number of times we want to regress, that is, update the parameters of the neural network.
+
+* In step 5, every time we use the previous fitted value function to compute the second term.
+
+* In step 8, the term stem:[V_{\phi_j}^{\pi}(s_i)] is the current network output and stem:[y_i] is the target. In the training process, we reduce the loss function, and find the optimal parameters of the network for the given input-output pairs. At the end of the training process, we get a neural network with updated weights and biases stem:[\phi_{j+1}].
+
+In the supervised learning setting, the function we want to learn is fixed. Say the underlying true function is stem:[y= f(x)=x^2]. All the training samples are derived from this fixed function.
+
+But here when stem:[N=1] we obtain the target stem:[y_i]'s using the network parameterized by stem:[\phi_1]. When stem:[N=2] we get the target stem:[y_i]'s using the network parameterized by stem:[\phi_2]. In each iteration, the target is obtained from a different function. This is known as the *moving target* problem. We can't get away with this problem. But as we are taking stem:[K] input-output pairs in each iteration by keeping the same target, this problem is kind of mitigated.
+
+One of the advantages of TD methods over MC methods is that we can do online learning. That is, as soon as we get the quadruple stem:[(s, a, r, s')], we update the value function. Then, we move from stem:[s'] to its next state, and keep moving forward in the same trajectory. But here we sample stem:[K] states arbitrarily and obtain the quadruple for each of those selected states just to have all the input-output pairs *independent* of each other. The quadruple stem:[(s', a', r', s'')] will be dependent (sequentially correlated) on stem:[(s, a, r, s')] if we go along the same trajectory. Therefore, the algorithm is not suitable for online learning.
+
+NOTE: In TD(0) algorithm, we go along the same trajectory.
+
+== Optimal Value Function - Control ==
+Bellman optimality equation for stem:[V_*] is given as:
+
+[stem]
+++++
+\begin{align*}
+V_*(s) & \leftarrow \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S}} \mathcal{P}^a_{ss'} (\mathcal{R}^a_{ss'} + \gamma V_*(s')) \right] \\
+
+& = \max_{a \in \mathcal{A}} \mathbb{E} \left[ r_{t+1} + \gamma V_*(s_{t+1}) \,  | \, S_t=s \right]
+
+\end{align*}
+++++
+
+To get a sample estimate for transition stem:[(s,a,r,s')] for stem:[V_*], that is, a single input-output pair, we should do stem:[V(s) \approx \max_{a \in \mathcal{A}} [ r + \gamma V(s')]]. It is not always possible to know the outcome of all actions starting from stem:[s]; costly as well. Therefore, for model free control, we use approximators for stem:[Q] and not stem:[V].
+
+=== Fitted Q Iteration ===
+Bellman optimality equation for stem:[Q_*] is given as:
+
+[stem]
+++++
+\begin{align*}
+Q_*(s, a) &= \sum_{s' \in \mathcal{S}} \mathcal{P}^a_{ss'} (\mathcal{R}^a_{ss'} + \gamma \max_{a' \in \mathcal{A}} Q_*(s', a')) \\
+
+& = \mathbb{E} \left[ r_{t+1} + \gamma \max_{a' \in \mathcal{A}} Q_*(s_{t+1}, a') \, | \, S_t=s, A_t=a  \right]
+\end{align*}
+++++
+
+Here the stem:[\max] operator is inside the expectation. We can get stem:[\max_{a' \in \mathcal{A}} Q_*(s_{t+1}, a')] using the previous fitted Q network by passing stem:[(s_{t+1}, a')]. We can pass all actions (all stem:[a] in the action space) to the existing network, and pick the stem:[Q] that has the maximum value. To do this efficiently, we can construct a neural network with multiple outputs, each one corresponding to each action, for a given state stem:[s] as shown in the third figure in the neural network approximators.
+
+For transitions stem:[(s,a,r,s')], we can compute stem:[r + \gamma \max_{a'} Q(s',a')]. This will be the estimated value for stem:[Q(s,a)]. It does not require simulating over all actions from stem:[s], instead we use the previous fitted optimal stem:[Q] function. We collect training data and perform supervised regression.
+
+[stem]
+++++
+\left(s_i,  r + \gamma \max_{a'} Q_{\phi}(s_i',a')\right) = (s_i, y_i)
+++++
+
+image::.\images\fitted_q_iter_algo.png[align='left', 600, 400]
+
+Here the target is computed using the Bellman optimality equation. We still have the moving target problem that was present in the fitted V iteration.
+
+IMPORTANT: Fitted V iteration is for calculating stem:[V^{\pi}] for a given policy stem:[\pi]. Fitted Q iteration is for calculating stem:[Q_*]. We call also use the V iteration to calculate stem:[Q^{\pi}]. We don't have an algorithm to calculate stem:[V_*] because of the max operator appearing outside the expectation.

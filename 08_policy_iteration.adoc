@@ -56,6 +56,10 @@ Then stem:[V^{\pi'}(s) \geq V^{\pi}(s)] for all stem:[s \in \mathcal{S}]. That m
 
 stem:[Q^{\pi}(s, \pi'(s))] means the first action is the  action recommended by stem:[\pi'] at state stem:[s], and and thereafter follow the policy stem:[\pi].
 
+*Proof:*
+
+image::.\images\pol_imp_theorem_proof.png[align='left', 600, 300]
+
 Now consider the greedy policy stem:[\pi' = \text{greedy}(V^{\pi})]. Then, stem:[\pi' \geq \pi]. That is, stem:[V^{\pi'}(s) \geq V^{\pi}(s)] for all stem:[s \in \mathcal{S}].
 
 * By definition of stem:[\pi'], at state stem:[s], the action chosen by policy stem:[\pi'] is given by
@@ -91,7 +95,7 @@ We start with a policy stem:[\pi_1]. Evaluate the policy stem:[V^{\pi_1}(s)]. An
 
 image::.\images\policy_iter_algo.png[align='left', 700, 500]
 
-NOTE: stem:[N] and stem:[K] could be some scalars. The evaluation step, that is, computing stem:[V^{\pi}(s)], can also be done using the matrix algebra method.
+NOTE: stem:[N] and stem:[K] are the policy and value iteration number respectively. They could be some scalars. The evaluation step, that is, computing stem:[V^{\pi}(s)], can also be done using the matrix algebra method.
 
 [stem]
 ++++
@@ -162,7 +166,7 @@ Can we computationally simplify the policy iteration process?
 
 We don't have to wait for the policy evaluation step to converge to stem:[V^{\pi_i}(s)], that is, until we find the exact value of each state under the policy stem:[\pi_i].
 
-We can have a stopping criterion like stem:[\epsilon] -convergence of value function evaluation or stem:[K] iterations of policy evaluation. We can stop the evaluation process (the inner for loop) at any intermediate stem:[k], and come up with a policy that is greedy with respect to that stem:[V^{\pi_i}_k(s)]. On repeating this, we still end up with the optimal policy stem:[\pi_*]. Extreme case of stem:[K=1] is the *value iteration* algorithm. We update the policy at every iteration.
+We can have a stopping criterion like stem:[\epsilon] -convergence of value function evaluation or stem:[K] iterations of policy evaluation. We can stop the evaluation process (the inner for loop) at any intermediate stem:[k], and come up with a policy that is greedy with respect to that stem:[V^{\pi_i}_k(s)]. On repeating this, we still end up with the optimal policy stem:[\pi_*]. Extreme case of stem:[K=1] is the *value iteration* algorithm. We take greedy with respect to stem:[V^{\pi_i}] right after each iteration.
 
 *Asynchronous Dynamic Programming:*
 

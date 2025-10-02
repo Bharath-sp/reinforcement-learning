@@ -1,0 +1,48 @@
+= Convergence of Approximate Methods =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Convergence ==
+What can we say about the convergence of fitted iteration methods? Does fitted V iteration converge to stem:[V^{\pi}]? Does fitted Q iteration converge to stem:[Q_*]?
+
+* In the DP setup, the convergence of the value iteration algorithms to either stem:[V^{\pi}, Q^{\pi}, V_*, Q_*] can be proved using the Banach fixed point theorem / Contraction mapping theorem.
+
+* In the model-free prediction TD setup, the convergence to stem:[V^{\pi}, Q^{\pi}] is guaranteed if the Robbins Monroe conditions are satisfied.
+
+* In the model-free control TD setup, the convergence to stem:[Q_*] is guaranteed if the following conditions are satisfied:
+
+** State and action spaces are finite
+** All state-action pairs are visited infinitely often
+** Learning rate schedule stem:[\alpha_t] obeys the Robbins-Monroe condition.
+
+*Sad Corollary:*
+
+No guarantee on convergence to optimal value functions (stem:[V^{\pi}, Q^{\pi}, Q_*]) exists for fitted iteration methods (irrespective of any function approximators that we may use).
+
+* In the regression step of the Monte-Carlo based fitted iteration methods, the gradient descent guarantees that it will converge to a local optimum. But here the convergence (to a local optimum) is guarantee is in the parameter space stem:[(\phi)] and not in the value function space.
+
+* In the TD based fitted iteration methods, we also have the problem of moving target. Therefore, we can't say anything about the convergence (even in the parameter space). In practice, it seems to work for a suitable choice of stem:[K].
+
+In summary, Convergence guarantees exist only in tabular case: in DP settings and in settings where state & action spaces are finite.
+
+== Online Q or Incremental Q Learning ==
+Fitted Q iteration doesn't do online learning. To achieve online learning, we can try applying the Watkin's Q-learning algorithm in the function approximations setting (in deep RL).
+
+If we take the extreme case of fitted Q iteration, that is, stem:[K=1], we then have to move along the same trajectory. The subsequent samples will then be sequentially correlated. The algorithm will be:
+
+image::.\images\online_q_learning_algo.png[align='left', 600, 400]
+
+We perform the gradient update for every step in the trajectory, that is, for every transition stem:[(s,a,r,s')]. But as the target is moving for every iteration (the subsequent stem:[y] is computed from the Q network with the updated parameters stem:[\phi_{n+1}]), the gradient descent update is not valid.
+
+Therefore, when we try to do online learning with the TD -based fitted V and Q iteration algorithms, we get into two problems:
+
+. The subsequent samples are sequentially correlated.
+. The target is changed for every sample; it is changed very fast. In the fitted Q iteration, we kept the same target for at least stem:[K] samples.
+
+So, no convergence is guaranteed.
+
+NOTE: There is no online learning with Monte-Carlo based fitted iteration algorithms as they work only on complete sequences.
+
+How can we get an online Q-learning algorithm in the deep RL setting?

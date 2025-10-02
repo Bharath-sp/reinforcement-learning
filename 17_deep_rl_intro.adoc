@@ -1,0 +1,71 @@
+= Introduction to Deep RL =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+All the algorithms we discussed under model free methods are in the tabular settings. The state and action spaces are finite and manageably small. So, stem:[V^{\pi}(s)] or stem:[Q^{\pi}(s,a)] are vectors and matrices respectively. But in practice, we may encounter very high-dimensional (or continuous) state and action spaces. So, we need richer ways to represent value functions. Thus, we move our focus to Deep RL.
+
+*Example of large state spaces:*
+
+The games like Backgammon, go, and Atari games involve sequential decision-making, so we use the techniques from RL to play these games. In these games, the state space is finite, but the cardinality will be very high in order. The game of Go has stem:[10^{170}] states, and Backgammon has stem:[10^{20}] states. With these games, we easily get into the problem of curse of dimensionality.
+
+In the games like Super Mario Bros, the state space is usually defined as all possible observations the agent can receive. In raw-pixels representation, the state is just the raw game screen. Suppose the emulator outputs frames of size stem:[H \times W \times C], where stem:[H=] height (number of pixels vertically), stem:[W=] width (number of pixels horizontally), and stem:[C=] channels (3 for RGB, 1 for grayscale). Then the state space is the set of all possible pixel configurations:
+
+[stem]
+++++
+\mathcal{S} = \{0, 1, \dots, 255\}^{H \times W \times C}
+++++
+
+There are a total of stem:[H \times W \times C] pixels, and each pixel can take a value between 0 and 255.
+
+* The dimension of the state space is stem:[H \times W \times C], so it will be a vector stem:[\mathbb{R}^{H \times W \times C}]. Each component of the vector can take a value between 0 and 255.
+
+* The total number of possible distinct states is stem:[|\mathcal{S}| = 256^{H \times W \times C}].
+
+Since one frame does not capture velocity or direction of motion, we often stack the last stem:[k] frames to capture the dynamics. Then the state dimension is: stem:[H \times W \times (C \times k)].
+
+== Value Function Approximators ==
+In all our previous methods, the value functions have been basically lookup tables (vectors or matrices). But to deal with large (and continuous) state and action spaces, we should use approximators for value functions.
+
+In the supervised learning setup, given the training data, we learn a function in such a way that it can generalize to unseen data as well. We come up with an approximate to the true function, using the data given. We employ the same technique in RL.
+
+As there are so many states, we cannot memorize (or store) the optimal value for each state or the best action to do at each state. So we learn it using some examples and generalize it to unseen data. We generalize from seen to unseen states. The function approximators could be any of the following: linear function approximator, decision tree, SVM, or neural networks. The algorithm that we see works with any function approximator. In general, the functions are parameterized; weights and biases are the parameters of NNs.
+
+NOTE: We consider cases where state space is large (or continuous) and the action space is discrete and manageably finite.
+
+== Neural Network Approximators ==
+In RL, given an MDP, we would like to approximate (or learn) the value function stem:[V^*], stem:[Q^*] or the policy function stem:[\pi^*].
+
+* stem:[V] is a mapping from state space to real numbers.
+* stem:[Q] is a mapping from state-action space to real numbers.
+* stem:[\pi] is a mapping from state space to action space.
+
+IMPORTANT: We don't have to learn stem:[V^*] or stem:[Q^*] first to find the optimal policy stem:[\pi^*]. We can directly learn stem:[\pi^*].
+
+We try to build a function approximator for any of these three functions.
+
+image::.\images\function_approx_01.png[align='center', 400, 300]
+
+Suppose we are working in a discrete action setting (with large state space) where there are stem:[M] possible actions, then we can also represent stem:[q] as shown in the third figure. There will be stem:[M] outputs from the model each corresponding to each action.
+
+=== Policy Evaluation Using NN ===
+The value of a policy stem:[\pi] is given by
+
+[stem]
+++++
+\begin{align*}
+V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ \sum_{k=0}^\infty \gamma^k r_{t+k+1} \, | \, S_t = s \right] \\
+& = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right]
+\end{align*}
+++++
+
+How do we compute the above two expectations using samples using neural networks?
+
+In the Monte-Carlo method, we roll out a complete trajectory, and from the time we see the state stem:[s], we sum the discounted rewards. Then, we roll out multiple such trajectories and take an average of them. Note that even a single sample is still an unbiased estimate of stem:[V^{\pi}(s)].
+
+Now, as there are so many states, it is not possible for us to estimate stem:[V^{\pi}(s)] for all the states. A possible thing to do is to estimate stem:[V^{\pi}(s)] for around 10k states and extend the idea to unseen states.
+
+
+

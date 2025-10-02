@@ -1,4 +1,4 @@
-= Monte Carlo Methods =
+= Model Free Prediction =
 :doctype: book
 :stem: latexmath
 :eqnums:
@@ -47,6 +47,8 @@ Here stem:[s_1', s_2', s_3'] are the possible next states from stem:[s]. To make
 
 == Model Free Prediction ==
 For a given MDP problem and a policy, without the knowledge of stem:[\mathcal{P}^{a}_{ss'}] and stem:[\mathcal{R}] (model free), we need to find the value of all states under stem:[\pi], that is evaluate stem:[V^{\pi}(s)] (prediction). There are two methods to do it: Monte Carlo methods and Temporal difference methods.
+
+IMPORTANT: We assume that the state space and action space are discrete and manageably small.
 
 It is known that the value of stem:[s] under the policy stem:[\pi] is 
 
@@ -186,5 +188,7 @@ Here we don't take the full back up, that is, we don't look at every possible su
 * Suited for off-line learning
 * Time required for one estimate doesn't depend on the total number of states, we consider only those states we encounter in the trajectory. Whereas in DP algorithms, we have to compute the value of all the states at stem:[k]th iteration stem:[V_k(s)] before we compute stem:[V_{k+1}(s)].
 * Estimates for each state are independent.
+
+NOTE: Monte Carlo methods can be used to evaluate stem:[Q^{\pi}] as well instead of stem:[V^{\pi}].
 
 

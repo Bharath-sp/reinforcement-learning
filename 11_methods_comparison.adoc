@@ -117,5 +117,5 @@ image::.\images\bias_variance_td_mc.png[align='center', 500, 300]
 |*Variance* |Not Applicable |High Variance |Low Variance
 |===
 
-* DP and TD algorithms are suitable for non-episodic domains, in MC, we need finite horizon settings.
+* DP and TD algorithms are suitable for non-episodic domains (infinite horizon setting), in MC, we need finite horizon settings.
 * The Bellman decomposition equation requires the Markovian assumption. DP and TD algorithms depend on the decomposition. So, DP and TD algorithms work in Markovian settings, whereas MC can work in Non-Markovian settings as well.

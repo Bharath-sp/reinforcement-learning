@@ -15,7 +15,7 @@ stem:[\mathcal{R}] can be a stochastic or deterministic function. And sometimes 
 
 * stem:[\gamma]: Discount factor stem:[\gamma \in [0,1\]]
 
-NOTE: In Markov reward process, there is no notion of action; we don't making any decision. The transition probabilities guide us to other states.
+NOTE: In Markov reward process, there is no notion of action; we don't make any decision. The transition probabilities guide us to other states.
 
 *Example 01:* simple grid world
 
@@ -72,7 +72,7 @@ G_t = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots = \sum_{k=0}^{\infty} 
 
 Now, stem:[G_t] is the total discounted return starting from time stem:[t]. The immediate reward stem:[r_{t+1}] is given the full value, and the future rewards are discounted.
 
-* If stem:[\gamma < 1], then the infinite sum has a finite value if the reward sequence is bounded.
+* If stem:[\gamma < 1], then the infinite sum has a finite value, provided the rewards are bounded. If stem:[\gamma=1] in an infinite horizon setting, the sum can diverge (e.g., if rewards are constant and positive). That makes stem:[V^{\pi}(s)] undefined unless the process is episodic (guaranteed termination in finite time).
 
 * If stem:[\gamma] close to 0, the agent is concerned only with immediate reward (myopic).
 
@@ -84,7 +84,7 @@ stem:[\gamma] helps us
 
 * Avoid infinite rewards that we get by traversing through a cycle (going through the same states in a loop) or in infinite horizon setting.
 
-In finite MDPs or MRPs, it is sometimes possible to use undiscounted reward (i.e., stem:[\gamma=1]) if all possible sequences terminate.
+In finite MDPs or MRPs, it is sometimes possible to use an undiscounted reward (i.e. stem:[\gamma=1] if all possible sequences terminate. But in matrix formulation, there is the possibility of non-existence of the inverse of the matrix. To avoid such scenarios, we always set stem:[\gamma] to be less than 1.
 
 NOTE: Even if stem:[\gamma=0.9], the importance given to, say stem:[r_{t+10}], will become negligible. So, we don't worry about the future that is very far from now.
 
@@ -93,15 +93,14 @@ Being in state stem:[s_t], we may know stem:[r_{t+1}], but we never know about t
 === Assigning Rewards and Discount Factor ===
 How can we assign rewards to each state so that our objective of reaching state stem:[s_{100}] in as less number of die rolls as possible is achieved?
 
-We may think of giving a positive number reward to states that have ladder, but the sequence can go in a cyclic fashion and keep accumulating rewards. We can achieve a maximum cumulative rewards by traversing through the non-absorbing states again and again, without reaching the goal state. To avoid that, we give a negative number reward to (penalize) all the non-absorbing states, and then try to *maximize* the cumulative rewards. The best reward function in this case will be
+We may think of giving a positive number reward to states that have ladder, but the sequence can go in a cyclic fashion and keep accumulating rewards. We can achieve maximum cumulative rewards by traversing through the non-absorbing states again and again, without reaching the goal state. To avoid that, we give a negative number reward to (penalize) all the non-absorbing states, and then try to *maximize* the cumulative rewards. The best reward function in this case will be
 
-[stem]
-++++
+\[
 \mathcal{R}(s) = \begin{cases}
 -1 & \text{for } s \in \{s_1, \dots, s_{99}\} \\
 0 & \text{if } s=s_{100} \\
 \end{cases}
-++++
+\]
 
 For every non-absorbing state, we get a reward of -1. We keep accumulating -1 until we reach stem:[s_{100}]. We should pick a path that accumulates less (negative) rewards, which translates to reaching stem:[s_{100}] in as less number of die rolls as possible.
 
@@ -297,5 +296,28 @@ For the snakes and ladders problem, as we know the rewards for all the states an
 
 For the reward function that we considered (-1 for non-absorbing states and 0 for the goal state), and with stem:[\gamma=1], the (absolute value of the) value function computed for a particular state provides the expected number of plays to reach the goal state stem:[s_{100}] from that state. We get this interpretation only if we have the reward of -1 for every non-absorbing state.
 
+=== Why stem:[\gamma \ne 1] in Matrix Computation ===
+A (square) matrix stem:[\mathbf{A}] is invertible if and only if its determinant is non-zero, stem:[\text{det}(\mathbf{A}) \ne 0]. The determinant of a matrix is equal to the product of its eigenvalues. Therefore, if any eigenvalue is zero, the determinant will be zero, and the matrix is not invertible.
 
+A (square) matrix stem:[\mathbf{A}] is invertible if and only if none of its eigenvalues are zero. For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, all of its eigenvalues must be non-zero. Now, let's relate the eigenvalues of stem:[(\mathbf{I} - \gamma \mathbf{P})] to the eigenvalues of stem:[\mathbf{P}].
+
+Let stem:[\lambda] be an eigenvalue of the matrix stem:[\mathbf{P}], with a corresponding eigenvector stem:[\mathbf{v}]. By definition, this means stem:[\mathbf{Pv} = \lambda \mathbf{v}]. Now consider the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] and the same eigenvector stem:[\mathbf{v}]:
+
+[stem]
+++++
+\begin{align*}
+(\mathbf{I} - \gamma \mathbf{P}) \mathbf{v} & = \mathbf{I} \mathbf{v} - \gamma \mathbf{P} \mathbf{v} \\
+& = \mathbf{v} - \gamma (\lambda \mathbf{v}) = (1-\gamma \lambda) \mathbf{v} \\
+\end{align*}
+++++
+
+This equation shows that the eigenvalues of the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] are of the form stem:[(1-\gamma \lambda)], where stem:[\lambda] is an eigenvalue of the transition matrix stem:[\mathbf{P}].
+
+The transition probability matrix stem:[\mathbf{P}] is a row-stochastic matrix, meaning each of its rows sums to 1. An important property of stochastic matrices (proven by the Perron-Frobenius theorem) is that their largest eigenvalue is 1.  All other eigenvalues have a magnitude less than or equal to 1. That is, for any eigenvalue stem:[\lambda] of stem:[\mathbf{P}], we have stem:[|\lambda| \leq 1]. So, we know that one of the eigenvalues of stem:[\mathbf{P}] is exactly stem:[\lambda_{max} =1].
+
+For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, all its eigenvalues stem:[(1-\gamma \lambda)] must be non-zero. Let's analyze the eigenvalue of stem:[(\mathbf{I} - \gamma \mathbf{P})] that corresponds to the largest eigenvalue of stem:[\mathbf{P}]. This is the eigenvalue where stem:[\lambda=1]. The corresponding eigenvalue for stem:[(\mathbf{I} - \gamma \mathbf{P})] is stem:[(1-\gamma)].
+
+For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, this eigenvalue must be non-zero: stem:[(1-\gamma) \ne 0 \implies \gamma \ne 1].
+
+Therefore, the condition that stem:[0 \leq \gamma < 1] guarantees that stem:[1-\gamma] is a positive, non-zero number, which in turn ensures that the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] is invertible.
 

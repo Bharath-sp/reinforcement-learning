@@ -1,0 +1,89 @@
+= Model Free Control =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+In model free prediction, given an MDP and a policy stem:[\pi], we looked at algorithms to find stem:[V^{\pi}] without the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}].
+
+In model free control, given an MDP, we want to find an optimal policy stem:[\pi_*] or optimal value function stem:[V_*] or optimal action value function stem:[Q_*] without the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}]. As the model is unknown or computationally infeasible (even if it is known - state space and action space can be high in cardinality), we learn better policies through experiences (samples).
+
+We assume that the state space and action space are discrete and manageably small.
+
+== Idea behind Model-free Control ==
+Under DP settings, there are two algorithms:
+
+. *Value iteration*: Given an MDP along with the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}], we find stem:[V_*] or stem:[Q_*] using the Bellman optimality equation in the update step.
+
+. *Policy iteration*: Given an MDP along with the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}], we find stem:[\pi_*].
+
+These two are the control algorithms in the DP settings. Can we use the knowledge from the value iteration algorithm to do model free control? The update equation in the value iteration algorithm is:
+
+[stem]
+++++
+V_{k+1}(s) \leftarrow \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left( \mathcal{R}^a_{ss'} + \gamma V_k(s') \right) \right]
+++++
+
+This update equation cannot be used in model free control as we don't know stem:[\mathcal{P}^a_{ss'}] and stem:[\mathcal{R}^a_{ss'}]. We should be able to compute the quantity inside the bracket for all actions stem:[a], and choose that action for which the quantity is maximum. Therefore, this is not possible without the knowledge of stem:[\mathcal{P}^a_{ss'}] and stem:[\mathcal{R}^a_{ss'}].
+
+How about using the knowledge from the policy iteration algorithm? Policy iteration has two steps: Policy evaluation and policy improvement.
+
+[stem]
+++++
+\begin{align*}
+& V^{\pi_i}_{k+1}(s) \leftarrow \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi_i}_k(s') \right) \\
+
+& \pi_{i+1} = \text{greedy}(V^{\pi_i}) = \begin{cases}
+1 & \text{if } a = \arg \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi_i}(s') \right] \right] \\
+0 & \text{Otherwise }
+\end{cases}
+\end{align*}
+++++
+
+Eventually the policy iterations will converge to stem:[\pi_*] and value iterations will converge to stem:[V_*]. We know how to evaluate a policy in a model-free setting. So, the first step can be achieved. Can we do policy improvement step also in a model-free setting?
+
+The (Greedy) policy improvement step using the value function is
+
+[stem]
+++++
+\pi(s) = \text{greedy}(V^{\pi}) = \arg \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right] \right] 
+++++
+
+Again here we should compute the quantity inside the bracket for all actions stem:[a], and choose that action for which the quantity is maximum. It is not always possible to know the outcome of all actions starting from stem:[s]; costly as well. Therefore, model free control is not done with stem:[V], we use stem:[Q] instead.
+
+The (Greedy) policy improvement over stem:[Q] is model-free.
+
+[stem]
+++++
+\pi(s) = \text{greedy}(Q^{\pi}) = \arg \max_{a \in \mathcal{A}} Q^{\pi}(s,a)
+++++
+
+So in the policy evaluation step, for a chosen policy, instead of evaluating stem:[V^{\pi}] for all stem:[s], we can evaluate stem:[Q^{\pi}(s,a)] for all stem:[(s,a)] and take the best action for which stem:[Q^{\pi}(s,a)] is maximum. Thus, for model-free control, we use stem:[Q^{\pi}], and not stem:[V^{\pi}].
+
+*Core idea behind model-free control algorithms:*
+
+* Initialize a policy stem:[\pi]
+* Repeat:
+.. Policy Evaluation: Find stem:[Q^{\pi}(s,a)] for all stem:[(s,a)] using model-free prediction methods.
+.. Policy improvement: Get an improved policy stem:[\pi'] from stem:[Q^{\pi}] using some improvement methods. One improvement candidate is taking greedy with respect to stem:[Q^{\pi}].
+
+== Policy Evaluation - Action Value Function ==
+Chosen a policy stem:[\pi], we now need to evaluate stem:[Q^{\pi}] instead of stem:[V^{\pi}]. Recall that the action value function of a policy stem:[\pi] is given by
+
+[stem]
+++++
+\begin{align*}
+Q^{\pi}(s,a) & = \mathbb{E}_{\pi} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s, A_t = a \right) \\
+& = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma Q^{\pi}(s_{t+1}, a_{t+1})  \, | \, S_t = s, A_t = a \right)
+\end{align*}
+++++
+
+* If we compute the first expectation using samples to find the estimate of stem:[Q^{\pi}(s,a)], then it is called Monte Carlo method.
+* If we compute the second expectation using samples to find the estimate of stem:[Q^{\pi}(s,a)], then it is called TD method.
+
+We can use MC or TD methods to evaluate stem:[Q^{\pi}] using samples.
+
+
+
+
