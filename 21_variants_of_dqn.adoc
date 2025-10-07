@@ -1,0 +1,176 @@
+= Variants of DQN =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Maximization Bias ==
+In the DQN algorithm, the target is computed using the maximum action value for the next state. This can lead to overestimation of action values, which can negatively impact the learning process.
+
+*Experiment 1:*
+
+Consider a single-state MDP with 2 actions. Both actions have zero mean rewards, so stem:[Q(s, a_1) = Q(s, a_2) = 0]. The agent does not know this information. Let stem:[\hat{Q}(s, a_1)] and stem:[\hat{Q}(s, a_2)] be the (unbiased) finite sample estimates of action values for action stem:[a_1] and stem:[a_2] respectively. If the estimates are noisy, it is likely that one of the estimates will be higher than the other due to random fluctuations. After enough training, the agent will prefer the action which has the maximum stem:[\hat{Q}] based on sample estimates. This can lead to selection of the overestimated action value, leading to a bias in our selection, which can in turn lead to suboptimal policies.
+
+The ideal policy is to select either action with equal probability, but the agent will end up selecting the action which had a higher estimate due to noise. This phenomenon is known as maximization bias (the bias induced by the `max` operator).
+
+*Experiment 2:*
+
+Consider a single-state MDP with 2 actions. One action has stem:[-\epsilon] (where stem:[\epsilon] is positive and small) mean reward and the other action has zero mean reward. In this case, the agent might choose action stem:[a_1] although action stem:[a_2] is clearly better in expectation as we are working with finite sample estimates.
+
+The problem of maximization bias exists even in the tabular Q-learning algorithm. The (decoupled) Q-learning update rule is:
+
+[stem]
+++++
+Q_{\text{new}}(s_t, a) \leftarrow Q_{\text{old}}(s_t, a) + \alpha \left(r_{t+1} + \gamma Q_{\text{old}}(s_{t+1}, \arg \max_{a'} Q_{\text{old}}(s_{t+1}, a')) - Q_{\text{old}}(s_t, a) \right)
+++++
+
+If an action value stem:[Q_{\text{old}}(s_{t+1}, a')] is overestimated, then the corresponding action is chosen as the best action, and its overestimated Q-value is used as the target to update the action value for stem:[(s_t, a)]. Here the stem:[Q_{\text{old}}] is estimated using a certain set of samples. Then, the same Q (the same samples) is being used to decide which action is the best (highest expected reward), and the same Q (the same samples) is also being used to estimate the value of that action. This can lead to a feedback loop where overestimated values lead to further overestimation.
+
+This problem persists in DQN as well. For transition stem:[(s_t, a_t, r_{t+1}, s_{t+1})], the TD target of the Q-value update is: stem:[y_t = r_{t+1} + \gamma \max_{a'} Q_{\phi}(s_{t+1}, a')] where stem:[Q_{\phi}(\cdot, \cdot)] is a noisy estimate during training phase. Therefore, the target stem:[y_t] can be an overestimate of the true target.
+
+=== Solution to Maximization Bias ===
+A possible solution to this problem comes from the below thought experiment:
+
+There are two identical fair coins (but we don't know they are fair). If a coin lands on heads, we get one dollar; otherwise we lose a dollar. We are interested in answering the following questions:
+
+* Which coin will yield more money in future flips, say in N coin tosses?
+* How much can we expect to win or lose per flip using the coin from the previous question?
+
+There are two possible strategies to answer these questions:
+
+. Flip each coin stem:[n] times, compute the empirical mean of each coin, and answer both the questions.
+. Flip each coin stem:[n_1] times, compute the empirical mean of each coin, and answer the first question. Then, flip the coin which had the higher empirical mean stem:[n_2] times (collecting fresh stem:[n_2] samples) and compute the empirical mean of this coin to answer the second question. Here stem:[n_1 + n_2 = n].
+
+The idea behind the second method is that we use separate samples to choose the best action and separate samples to estimate the value of that action. This helps to reduce the bias in our estimates.
+
+In the tabular Q-learning setting, the idea is to have two Q-tables. Have two different set of samples to decide the action and to evaluate the target.
+
+For each transition stem:[(s_t, a_t, r_{t+1}, s_{t+1})], we flip a fair coin to decide any of the two update steps:
+
+[stem]
+++++
+\begin{align*}
+Q_1(s_t, a_t) & \leftarrow Q_1(s_t, a_t) + \alpha \left(r_{t+1} + \gamma Q_2(s_{t+1}, \arg \max_{a'} Q_1(s_{t+1}, a')) - Q_1(s_t, a_t) \right) \\
+ \\
+Q_2(s_t, a_t) & \leftarrow Q_2(s_t, a_t) + \alpha \left(r_{t+1} + \gamma Q_1(s_{t+1}, \arg \max_{a'} Q_2(s_{t+1}, a')) - Q_2(s_t, a_t) \right) \\
+\end{align*}
+++++
+
+* In the first update rule, we are using stem:[Q_1] table to compute the best action, and using stem:[Q_2] table to compute the Q-value of the selected action.
+
+* In the second update rule, we are using stem:[Q_2] table to compute the best action, and using stem:[Q_1] table to compute the Q-value of the selected action.
+
+In the DQN setting, we already have two Q networks (to address the moving target problem); both are noisy estimates of true Q in different ways. So, we can take advantage of that by using the following update rule. The target stem:[y_i] for the transition stem:[(s_i,a_i,r_i,s_i')] is computed as:
+
+[stem]
+++++
+Q^{\text{original}}(s_i, a_i) \leftarrow r_i + \gamma Q^{\text{target}} \left(s_i', \arg \max_{a'} Q^{\text{original}}(s_i', a') \right)
+++++
+
+Here stem:[\leftarrow] means assigning targets which can then be picked up while sampling from the replay buffer.Here we are using one network stem:[Q^{\text{original}}] to decide the best action and another network stem:[Q^{\text{target}}] to compute the Q value of the selected action. This is the *Double DQN (DDQN)* algorithm. In terms of coding, there is only one line change from the original DQN algorithm to implement DDQN.
+
+This way, we are using separate samples to decide the best action and to evaluate the value of that action. This doesn't eliminate the bias completely, but it helps to reduce the bias significantly.
+
+IMPORTANT: At the end of the training, we can use either of the two Q tables (in tabular Q-learning) and Q original network (in DDQN) to derive the final policy.
+
+== Prioritized Experience Replay ==
+In the DQN algorithm, when we sample a random mini-batch of data, we sample transitions uniformly from the replay buffer. Then, we perform regression with the objective to reduce the one-step TD error (aka Bellman error). However, not all transitions are equally important for learning. Some transitions may provide more useful information for updating the Q-values than others.
+
+We can pick transitions in proportion to their absolute TD error. The absolute (one-step) TD error for a transition stem:[(s_i,a_i,r_i,s_i')] is defined as:
+
+[stem]
+++++
+\left| r_i + \gamma \max_{a'} Q_{\phi'}(s_i',a') - Q_{\phi}(s_i,a_i) \right|
+++++
+
+where stem:[Q_{\phi}] is the original Q network and stem:[Q_{\phi'}] is the target Q network. The idea is to give more importance to transitions with high TD error because they are more likely to lead to significant updates in the Q-values. This leads to faster learning. For a transition stem:[(s_i,a_i,r_i,s_i')]
+
+* TD error for vanilla DQN is
++
+[stem]
+++++
+\delta_i = r_i + \gamma \max_{a' \in \mathcal{A}} Q_{\phi'}(s_i', a') - Q_{\phi}(s_i, a_i)
+++++
+
+* TD error for DDQN is
++
+[stem]
+++++
+\delta_i = r_i + \gamma Q_{\phi'}(s_i', \arg \max_{a' \in \mathcal{A}} Q_{\phi}(s_i', a')) - Q_{\phi}(s_i, a_i)
+++++
+
+*Procedure:*
+
+. A minibatch of transitions is sampled from the replay buffer according to their current priorities stem:[p_i]. At the start, we have equal probability for all transitions.
+. Training step: The Q-network is updated using this minibatch.
+. Compute the absolute TD errors stem:[| \delta_i |] for those sampled transitions (with the updated networks), and update their corresponding priorities in the buffer
++
+[stem]
+++++
+p_i \leftarrow (| \delta_i | + \epsilon)^{\alpha}
+++++
++
+where stem:[\epsilon] is a small positive number (say stem:[10^{-6}]) to ensure that every transition has a nonzero probability of being sampled. And stem:[\alpha \in [0,1\]] controls how strongly prioritization affects sampling. stem:[\alpha = 0]: uniform replay (no prioritization) and stem:[\alpha=1]: fully prioritized replay.
++
+For other transitions (non-picked ones), the priorities remain unchanged until they are sampled.
+
+. In the next iteration, each transition is sampled with probability
++
+[stem]
+++++
+P(i) = \frac{p_i}{\sum_j p_j}
+++++
++
+So transitions with higher TD errors are sampled more frequently.
+
+. We want to compute the expectation
++
+[stem]
+++++
+\mathbb{E}_{(s_i, a_i, r_i, s_i') \sim D} \left[ \left( r_i + \gamma \max_{a' \in \mathcal{A}} Q_{\phi'}(s_i', a') - Q_{\phi}(s_i, a_i) \right)^2 \right]
+++++
++
+where the transitions are sampled from stem:[D] from an uniform distribution. Now since we are sampling them from a priority based modified distribution, it is essential to use the importance sampling weights:
++
+[stem]
+++++
+w_i = \left( \frac{1}{N} \cdot \frac{1}{P(i)} \right)^{\beta}
+++++
++
+The parameter stem:[\beta] is an annealing term used to control the phase of the learning. It is low stem:[(0.4 \text{ to } 0.8)] in the beginning of the training and tends to 1 towards the end of the training.
+
+. The final loss term for the mini-batch is:
++
+[stem]
+++++
+L = \frac{1}{N} \sum_i w_i (\delta_i)^2
+++++
+
+IMPORTANT: The optimal choices of stem:[\alpha] and stem:[\beta] during various phases of training depends on task at hand. We need to experiment and properly tune them.
+
+== Practical Tips for DQN ==
+
+* DQN is more reliable on some tasks than others. Before testing your DQN implementation on tasks at hand, test it first on reliable tasks like Pong and Breakout: if it doesn't achieve good scores, something is wrong with our implementation.
+
+* Large replay buffers improve robustness of DQN, but memory efficiency should be taken care.
+
+* DQN converges slowly - for ATARI it is often necessary to wait for 10-40 million frames (couple of hours to a day of training on GPU) to see results significantly better than random policy. Be Patient.
+
+* Always run at least two different seeds when experimenting
+
+* Learning rate (stem:[\eta] in the gradient descent parameter update) scheduling is beneficial. Try high learning rates in the initial exploration period
+
+* Try non-standard exploration schedules. We used stem:[\epsilon-] greedy with stem:[\epsilon-] decay exploration schedule. This is one of the exploration schedules. We can use other non-standard exploration schedules as well.
+* Use Double DQN with prioritized experience replay -  significant improvement
+* Use Huber loss on TD (aka Bellman) error stem:[a]
++
+[stem]
+++++
+L_{\delta}(a) = \begin{cases}
+\frac{1}{2} a^2, & \text{for } |a| \leq \delta \\
+\delta (|a| - \frac{1}{2}\delta), & \text{otherwise. }
+\end{cases}
+++++
++
+Sometimes this might give better convergence results.
+

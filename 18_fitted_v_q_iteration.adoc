@@ -1,10 +1,10 @@
-= Fitted V Iteration =
+= Fitted Iteration =
 :doctype: book
 :stem: latexmath
 :eqnums:
 :toc:
 
-== Monte Carlo based Value Function Fitting ==
+== Monte Carlo based Fitted V Iteration ==
 Consider a MDP with a finite horizon stem:[H] or with an episodic setting. Given a policy stem:[\pi], say we rolled out stem:[M]trajectories, then the estimate of stem:[V^{\pi}(s)] can be written as: 
 
 [stem]
@@ -12,7 +12,7 @@ Consider a MDP with a finite horizon stem:[H] or with an episodic setting. Given
 V^{\pi}(s) \approx \frac{1}{m} \left[  \sum_{i=1}^M  \left[ \sum_{k=0}^H \left( \gamma^k r^i_{t+k+1} \, | \, S_t = s  \right) \right] \right]
 ++++
 
-stem:[H] is a constant in a finite horizon setting and a random variable in an episodic setting. To roll out many trajectories from stem:[s], we need to reset the simulator back to state stem:[s] each time. It is not always possible. So, as an alternate, we arbitrarily sample many states, and roll out a single trajectory from each state. We get a single sample estimate stem:[V^{\pi}(s)] for each state stem:[s] (high variance, but OK). This way we collect training data for as many states as possible and regress thereafter.
+stem:[H] is a constant in a finite horizon setting and a random variable in an episodic setting. To roll out many trajectories from stem:[s], we need to reset the simulator back to state stem:[s] each time. It is not always possible. So, as an alternate, we arbitrarily sample many states, and roll out a single trajectory from each state. We get a single sample estimate stem:[V^{\pi}(s)] for each state stem:[s] (high variance, but OK). If possible, we can also roll out multiple trajectories from stem:[s], and take average of the value. This way we collect training data for as many states as possible and regress thereafter.
 
 [stem]
 ++++
@@ -31,7 +31,7 @@ NOTE: MSE loss function is used, but we can use any other loss functions as well
 
 Monte Carlo based methods need complete sequences, so they are suitable only for episodic tasks.
 
-== TD based Value Function Fitting ==
+== TD based Fitted V Iteration ==
 Consider a MDP with finite, indefinite, or infinite horizon. Given a policy stem:[\pi], we observe transition stem:[(s,a,r, s')] at time stem:[t]. Using the one-step look-ahead, the value of state stem:[s] under stem:[\pi] is
 
 [stem]
@@ -109,7 +109,7 @@ For transitions stem:[(s,a,r,s')], we can compute stem:[r + \gamma \max_{a'} Q(s
 \left(s_i,  r + \gamma \max_{a'} Q_{\phi}(s_i',a')\right) = (s_i, y_i)
 ++++
 
-image::.\images\fitted_q_iter_algo.png[align='left', 600, 400]
+image::.\images\fitted_q_iter_algo.png[align='left', 700, 500]
 
 Here the target is computed using the Bellman optimality equation. We still have the moving target problem that was present in the fitted V iteration.
 

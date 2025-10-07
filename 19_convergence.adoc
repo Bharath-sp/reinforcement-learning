@@ -25,10 +25,10 @@ No guarantee on convergence to optimal value functions (stem:[V^{\pi}, Q^{\pi}, 
 
 * In the TD based fitted iteration methods, we also have the problem of moving target. Therefore, we can't say anything about the convergence (even in the parameter space). In practice, it seems to work for a suitable choice of stem:[K].
 
-In summary, Convergence guarantees exist only in tabular case: in DP settings and in settings where state & action spaces are finite.
+In summary, convergence to the *exact value functions* is guaranteed only in DP settings and in tabular case for model-free settings (where state & action spaces are finite). No convergence is guaranteed for fitted V or Q iteration methods.
 
 == Online Q or Incremental Q Learning ==
-Fitted Q iteration doesn't do online learning. To achieve online learning, we can try applying the Watkin's Q-learning algorithm in the function approximations setting (in deep RL).
+Fitted V or Q algorithms are not online learning algorithms. To achieve online learning, we can try applying the Watkin's Q-learning algorithm in the function approximations setting (in deep RL).
 
 If we take the extreme case of fitted Q iteration, that is, stem:[K=1], we then have to move along the same trajectory. The subsequent samples will then be sequentially correlated. The algorithm will be:
 
@@ -41,7 +41,7 @@ Therefore, when we try to do online learning with the TD -based fitted V and Q i
 . The subsequent samples are sequentially correlated.
 . The target is changed for every sample; it is changed very fast. In the fitted Q iteration, we kept the same target for at least stem:[K] samples.
 
-So, no convergence is guaranteed.
+So, convergence guarantee becomes even worse when we consider online learning in the deep RL setting.
 
 NOTE: There is no online learning with Monte-Carlo based fitted iteration algorithms as they work only on complete sequences.
 

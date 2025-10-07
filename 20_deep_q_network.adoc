@@ -1,0 +1,115 @@
+= Deep Q Network =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+We are working in a setting where the state space can be large (or continuous) and the action space is manageably finite. In the algorithms we saw earlier such as fitted V and Q algorithms, convergence to the exact true value functions is not guaranteed, and they are not suitable for online learning. We want:
+
+* Online algorithm (like Q-learning in tabular case) in the function approximation setting.
+* No sequential correlation in data samples
+* Some stability with respect to gradient updates (as the moving target problem cannot be completely eliminated)
+
+== Replay Buffers ==
+Replay Buffer is a dataset containing transitions stem:[(s,a, r,s')]. It is denoted by stem:[D]. Replay buffers are of fixed size stem:[N]. We use the idea from fitted Q iteration to collect these transitions.
+
+Starting from stem:[s], we pick an action suggested by an exploratory (random) policy, go to stem:[s'] and get a reward stem:[r]. Add this quadruple to the buffer. Then, we move forward in the same trajectory to get stem:[(s', a', r', s'')] using the same policy. Add this quadruple to the buffer, and so on. We fill the buffer with stem:[N] such transitions, say stem:[N=100,000].
+
+image::.\images\replay_buffer_01.png[align='center', 300, 200]
+
+We use an stem:[\epsilon-] greedy policy (starting with \epsilon=1 - a complete random policy) to periodically feed the buffer with newer experiences. When the buffer is full, we can't insert any more transitions into it; we should eject something out to insert a new one. The simplest mechanism to do this is FIFO, where the oldest transitions is discarded.
+
+From this saved buffer, we sample a random mini-batch of transitions stem:[B << N], say stem:[B=100], to perform regression. Random sampling ensures the samples are no longer correlated. Variance of the gradient estimate will also be low compared to the gradient computed using one sample. This is equivalent to sampling stem:[K] transitions arbitrarily in the fitted Q iteration algorithm. But the fitted Q doesn't allow us to do online learning; replay buffers on the other hand allow us to implement the learning in an online fashion.
+
+== Target Networks ==
+The other problem with the TD-based fitted iterations is that the moving target. In every iteration, as we do gradient descent, the parameters of the network are updated; resulting in stem:[y_i]'s from an updated network for the next iteration. To mitigate this problem, we maintain a copy of the network called as *Target network*.
+
+At the start of the learning process, we initialize a Q-network (the original network) parameterized by stem:[\phi]. Take a copy of this network and call it the target network parameterized by stem:[\phi'].
+
+The expected loss from the network is given by
+
+[stem]
+++++
+L(\phi_i) = \mathbb{E}_{(s,a,r,s') \in D} \left[Q_{\phi_i}(s,a) - r - \max_{a'} Q_{\phi'_i}(s',a') \right]^2
+++++
+
+* The second term in the target stem:[y = r + \max_{a'} Q_{\phi'_i}(s',a')] in the above loss function is computed using the target network.
+
+* But when we do gradient descent, we update the original network, that is, the parameters stem:[\phi].
+
+This way the target network is kept constant for a while (for stem:[C] steps). Every stem:[C] steps, say 10,000 steps, the weights of the original network are copied to the target network. This way, the moving target problem is mitigated to some extent.
+
+== DQN Algorithm ==
+
+image::.\images\dqn_algo.png[align='left', 700, 300]
+
+* stem:[Q] is the original network parameterized by stem:[\phi] and stem:[Q'] is the target network parameterized by stem:[\phi'].
+* After step 3, for some episodes, we just collect the transitions stem:[(s,a,r,s')] using a random policy and add it to the replay buffer stem:[D]. We don't do any learning at this stage. After the replay buffer is filled with enough transitions, we start the learning process (from step 4).
+* In step 8, we store the transition stem:[(s,a,r,s')] in the replay buffer stem:[D] (if the buffer is full, we discard the oldest transition).
+* In step 11, we compute the target stem:[y_i] for each transition in the mini-batch using the target network stem:[Q'].
+* In step 13, we perform the regression step with stem:[B] number of stem:[(s_i, y_i)] pairs, and update the weights of the original network stem:[Q].
+
+DQN is an online algorithm, as we keep updating the network weights after every step in the trajectory.
+
+NOTE: stem:[Q(s,a)] represents the expected reward for taking action stem:[a] at state stem:[s].
+
+=== Polyak Averaging ===
+Polyak Averaging is another way to update the Target Network. Instead of updating the target network abruptly after stem:[C] steps, we can do a soft update every step. At every step when we do gradient update, stem:[\phi] gets updated. We can also do the following update to the target network:
+
+[stem]
+++++
+\phi' \leftarrow \tau \phi' + (1-\tau) \phi
+++++
+
+where stem:[\phi'] is the weights and biases of the target network. The typical value for stem:[\tau] is 0.99; we retain more of the old target network and less of the updated original network. This way, the target network is updated slowly and smoothly.
+
+NOTE: For a certain class of problems, this method works better than the abrupt update in step 14 of the DQN algorithm.
+
+=== Efficacy of DQN ===
+DQN algorithm was the first deep RL algorithm to perform well on Atari games. It outperformed many baseline methods that were used to play Atari games back then, which used hand-crafted features. The original DQN paper is by Mnih et al., 2015. DQN doesn't use any hand-crafted features; it learns directly from the raw pixel values of the game screen. The DQN algorithm takes a stack of 4 consecutive frames as input and outputs stem:[Q(s,a)]. The network architecture used in DQN is a Convolutional Neural Network (CNN) followed by a few fully connected layers.
+
+The DQN algorithm was tested on 49 Atari games, and it outperformed all previous methods on 29 of them.
+
+IMPORTANT: The benchmark to test any supervised classification algorithm is the MNIST dataset. Similarly, the benchmark to test any RL algorithm is the Atari games.
+
+As there is no convergence guarantee for DQN, even after the training - after learning the (assumed) optimal Q function, we still prefer to have a slightly exploratory (optimal) policy (stem:[\epsilon-] greedy with stem:[\epsilon=0.01]) rather than a full greedy policy.
+
+*How learning takes place with DQN?*
+
+In standard RL setups for Atari games, the agent learns entirely on its own through trial and error with the game environment. The environment is a software emulator that simulates the Atari games. For example, in games like Pong, the opponent paddle's motion logic is hard-coded in the ROM by the game developers. The emulator simply executes that code frame by frame.
+
+The RL agent (e.g., a DQN, A3C, or PPO model) learns by:
+
+. Observing screen frames (usually 84 x 84 grayscale images).
+. Taking actions (e.g., move up, down, stay).
+. Receiving rewards from the game environment (e.g., +1 if the opponent misses the ball).
+
+The agent plays against the environment, which is just a program simulation of the game's rules. So, the environment is completely deterministic or stochastic, but not adversarial in the sense of a human opponent.
+
+In the game of Ping pong, given any state stem:[s] (the last 4 frames), the agent can take three actions up, down, stay. When the ball is going towards the opponent, it doesn't matter what action the agent takes. The Q values for all three actions will be similar. But when the ball is coming towards the agent, the action taken matters. The Q value for the correct action should be higher than that of the other two actions.
+
+image::.\images\dqn_q_values.png[align='center', 500, 300]
+
+This plot helps us ensure that the Q values are learned correctly (and meaningful) during the training process. Given these Q values, the agent can take the action with the highest Q value (greedy action) or take a random action with a small probability (exploration).
+
+== Track the Training Progress ==
+How do we track the learning progress of an RL agent in the function approximation setting?
+
+In RL, learning happens via interaction rather than direct supervision. Hence, we don't have a fixed dataset or target outputs to measure accuracy against. Instead, we use episodic rewards or value estimates over epochs as the tracking metrics. In games like Pong, one epoch refers to one complete game (from start to finish).
+
+.Average reward per episode and average Q value for two games - Breakout and Seaquest.
+image::.\images\track_training.png[align='center', 700, 300]
+
+On the x-axis, we have the number of epochs (games) played in log scale, and on the y-axis, we have the average reward per episode (the first two pictures), and the average Q values (the last two pictures). This plot will give us an idea of how well the agent has learned till now.
+
+Before starting the training, we roll out a few episodes using a random policy, and collect some states (around 10k or 15k states). This forms our validation set. Then, during DQN (or any RL) training,
+
+. At every stem:[N] steps (say 10k steps), we pause the training. Freeze the Q network.
+. We roll out a few episodes (say 100 episodes) using the current partially learned policy with a full greedy policy (no exploration) or stem:[\epsilon-] greedy with stem:[\epsilon=0.01] policy from the start state of the game to the terminal state, or from every state in the validation set to the terminal state. Note: If it is an infinite horizon setting, we roll out for a fixed number of steps (say 10k steps).
+. We compute the average reward per episode. Alternatively, we can also compute the Q value for all(state, action) pairs seen in the trajectory, and take the average. The Q values are computed using the frozen Q network by passing the states through it. It is a good sign if the average Q value increases over training epochs.
+
+This makes one point in the above plot. We repeat this process every stem:[N] steps of training. This way, we can track the learning progress of the agent.
+
+
+
