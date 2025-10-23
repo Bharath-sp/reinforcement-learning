@@ -7,7 +7,7 @@
 == Introduction ==
 In model free prediction, given an MDP and a policy stem:[\pi], we looked at algorithms to find stem:[V^{\pi}] without the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}].
 
-In model free control, given an MDP, we want to find an optimal policy stem:[\pi_*] or optimal value function stem:[V_*] or optimal action value function stem:[Q_*] without the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}]. As the model is unknown or computationally infeasible (even if it is known - state space and action space can be high in cardinality), we learn better policies through experiences (samples).
+In model free control, given an MDP, we want to find an optimal policy stem:[\pi_*] or optimal value function stem:[V_*] or optimal action value function stem:[Q_*] without the knowledge of stem:[\mathcal{P}] and stem:[\mathcal{R}]. As the model is unknown or computationally infeasible (even if it is known - state space and action space can be high in cardinality), we should learn policies through experiences (samples).
 
 We assume that the state space and action space are discrete and manageably small.
 

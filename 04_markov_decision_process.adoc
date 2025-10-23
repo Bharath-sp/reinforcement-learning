@@ -27,7 +27,7 @@ Here the probabilities are conditional on two variables. The probability of stem
 r_{t+1} = \mathcal{R}(s_t, a_t, s_{t+1})
 ++++
 +
-Reward is a function of these three variables in MDP. Note: The reward function can still be a stochastic function. It is not that for a given stem:[s_t, a_t, s_{t+1}] the reward given is always the same.
+Reward is a function of these three variables in MDP. Note: The reward function can still be a stochastic function. It is not that for a given stem:[s_t, a_t, s_{t+1}], the reward given is always the same.
 
 * stem:[\gamma]: Discount factor stem:[\gamma \in [0,1\]]
 

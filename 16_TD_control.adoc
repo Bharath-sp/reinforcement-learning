@@ -135,15 +135,38 @@ image::.\images\q_learning_algo.png[align='left', 600, 400]
 
 Unlike in SARSA, we don't sample stem:[a'] from the policy. We look at all the actions, and read out the (full) greedy action with respect to the current stem:[Q]. We evaluate a greedy policy stem:[\pi_*] using the samples from the stem:[\epsilon]- greedy policy stem:[\pi].
 
-. Initialize stem:[Q(s,a)] for all state-action pairs (commonly to 0)
-. At state stem:[s_t], select an action stem:[a_t] using an stem:[\epsilon-] greedy policy.
-. Execute stem:[a_t]. Observe the reward stem:[r_{t+1}] and the next state stem:[s_{t+1}]
-. Apply the Q-learning update rule
-. Set stem:[s_t \leftarrow s_{t+1}]
-. Repeat from Step 2 until the episode ends (terminal state or time limit)
-. Continue the process over many episodes until the Q-values converge or performance stabilizes.
+. Initialize the Q-value table stem:[Q(s,a)] for all state-action pairs (commonly to 0).
+. Choose a learning rate stem:[\alpha \in (0,1\]], discount factor stem:[\gamma \in [0,1)], exploration rate stem:[\epsilon \in [0,1\]], a minimum stem:[\epsilon_{\text{min}}] and a decay rate.
+. Repeat the below for each episode:
+.. Initialize the starting state stem:[s \leftarrow s_0]
+.. For each step in the episode:
+... Select an action stem:[a] using an stem:[\epsilon-] greedy policy.
++
+[stem]
+++++
+a = \begin{cases} 
+\text{random action from } \mathcal{A(s)}, & \text{ with probability } \epsilon \\
+\arg \max_{a'} Q(s,a'), & \text{ with probability } 1-\epsilon \\
+\end{cases}
+++++
+... Execute stem:[a]. Observe the reward stem:[r] and the next state stem:[s']
+... Apply the Q-learning update rule:
++
+[stem]
+++++
+Q(s,a) \leftarrow Q(s,a) + \alpha \left[ r + \gamma \max_{a'} Q(s',a') - Q(s,a) \right]
+++++
+... Set stem:[s \leftarrow s']
+... (optional) If using per-step stem:[\epsilon] decay, then stem:[\epsilon \leftarrow \max(\epsilon_{\text{min}} , \epsilon * \text{decay rate})].
 
-The policy that emerges when the Q-table converges is the optimal policy: stem:[\pi_*(s) = \arg \max_a Q(s,a)].
+.. End of episode: If the episode terminates (e.g., reaching terminal state), proceed to the next episode. If using per-episode epsilon decay:
++
+[stem]
+++++
+\epsilon \leftarrow \max(\epsilon_{\text{min}} , \epsilon * \text{decay rate})
+++++
+. Continue the process over many episodes until the Q-values converge or performance stabilizes.
+. Derive the optimal policy: After convergence, the optimal policy is: stem:[\pi_*(s) = \arg \max_a Q(s,a)].
 
 CAUTION: Q-learning is an off-policy but online learning algorithm. Both SARSA and Q-learning are online learning algorithm.
 
@@ -182,7 +205,15 @@ image::.\images\afterstates.png[align='center', 400, 300]
 
 From both state-action pair stem:[A] and stem:[B], we come to the same state stem:[C] (afterstate). From state C, irrespective of the previous states, the game tree will be the same. So any learning about the state-action pair on the left (A) would immediately transfer to the pair on the right (B).
 
-We can implement an afterstate value function which would update both the state-action pairs stem:[A] and stem:[B] after we reach state in stem:[C]. An afterstate value function is a function that updates all the state-action pairs that result in the same afterstate. Implementing this in our algorithm makes the learning and convergence faster.
+[stem]
+++++
+\begin{align*}
+Q(A,a_1) & \leftarrow Q(A,a_1) + \alpha \left[ r + \gamma \max_{a'} Q(C, a') - Q(A,a_1) \right] \\
+Q(B,a_2) & \leftarrow Q(B,a_2) + \alpha \left[ r + \gamma \max_{a'} Q(C, a') - Q(B,a_2) \right] \\
+\end{align*}
+++++
+
+We can implement an afterstate value function which would update both the state-action pairs stem:[Q(A,a_1)] and stem:[Q(B,a_2)] after we reach state stem:[C] from any of the state-action pairs. An afterstate value function is a function that updates all the state-action pairs that result in the same afterstate. Implementing this in our algorithm makes the learning and convergence faster.
 
 
 

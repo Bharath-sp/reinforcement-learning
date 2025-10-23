@@ -1,0 +1,279 @@
+= Policy Gradient Method =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+Deep Q-network is used when the state space is large, continuous but the action space is manageably small and finite. Now we get into a setting where both the state space and action space are large and continuous. A class of algorithms called policy gradients and actor-critic methods work in these settings.
+
+In the DP algorithms, we have value iteration algorithm to find stem:[V_*], and policy iteration algorithm to find stem:[\pi_*]. Similarly, in the deep RL space, the DQN algorithm comes under the idea of value iteration algorithm as it uses a loss function derived from Bellman optimality equation for stem:[Q_*]. In the policy gradient methods, the objective is to find the optimal policy stem:[\pi_*] without worrying much about the value functions (stem:[Q] or stem:[V]). So, this comes under the idea of policy iteration algorithms we saw in the DP setting.
+
+== Motivation for Policy Based RL ==
+In DQN and last few function approximation methods, we parameterized value functions using parameter stem:[\phi], i.e., we had a neural network to approximate (or estimate) the value functions:
+
+[stem]
+++++
+\begin{align*}
+V_{\phi}^{\pi}(s) & = V^{\pi}(s) \\
+Q_{\phi}^{\pi}(s) & = Q^{\pi}(s,a) \\
+\end{align*}
+++++
+
+After several iterations, we settle down at a stem:[Q] function, which we assume to be the optimal Q function. Then, the (optimal) policy was generated from it (by being greedy or stem:[\epsilon-] greedy):
+
+[stem]
+++++
+\pi_*(a \, | \, s) = \begin{cases}
+1 & \text{if } a = \arg \max_{a \in \mathcal{A}} Q_*(s,a) \\
+0 & \text{Otherwise}
+\end{cases}
+++++
+
+In the policy gradient methods, we directly parameterize the policy. That is, we have a function approximator (a neural network) to estimate the policy. The policy is a probability distribution over the action space given a state stem:[s]. As the neural network outputs the probability distribution, we say that the distribution is parameterized by stem:[\theta] (weights and biases of the policy network). That is, stem:[\theta] defines the shape of the probability distribution.
+
+[stem]
+++++
+\pi_{\theta}(a \, | \, s) = P(a \, | \, s, \theta)
+++++
+
+NOTE: Policy-based RL can learn the optimal *stochastic* policy.
+
+In some sense, looking for policies is more natural than computing value functions V or Q.
+
+* Computing stem:[V] is a bit of problem (we do not have any control algorithms for stem:[V]).
+* With state-value function stem:[Q], computing arg max over actions gets tricky when action space is large and continuous.
+
+So, we will now actually look out for the optimal policies in the stochastic policy space. These policy-based RL methods also have better convergence properties than DQN.
+
+The general landscape of RL algorithms is:
+
+image::.\images\rl_landscape.png[align='center', 600, 300]
+
+Why to have Stochastic policies?
+
+* In the two player game (a multi-agent scenario) of Rock-paper-scissors, a deterministic policy is easily exploited. Typically in a multi-agent setting, a uniform random policy is optimal (Nash equilibrium).
+
+* Stochastic policies are useful in aliased grid world MDP problems. The states in the bottom row are terminal states. Here the states are partially observable, i.e., the agent cannot differentiate the gray states. The states 2 and 4 are not the same states, they are just indistinguishable in agent's perspective. For example, when the states are represented by features of the following form:
+
+[stem]
+++++
+\psi(s,a) = \mathbf{1}( \text{wall towards South}, a = \text{ a way to move East})
+++++
+
+Then, state 2 and 4 are indistinguishable. Under such aliasing, an optimal deterministic policy will either be:
+
+* Move W in both gray states (shown in the image)
+* Move E in both gray states
+
+(we have to take the same action as these states are indistinguishable). Value based RL learns a near deterministic policy (greedy or stem:[\epsilon-] greedy). Such a policy will go back and forth on the grid for a long time before hitting money.
+
+image::.\images\aliased_grid_world.png[align='center', 300, 200]
+
+On the other hand, an optimal stochastic policy will randomly move E or W in gray states. It will reach the goal state in a few steps with high probability.
+
+== Policy Using Function Approximators ==
+Here we will have a neural network to represent the policy. The agent feeds state as input to the function approximator, and the network will output a policy. For a given state, the policy is a probability distribution over actions. From this resulting distribution, we *sample* an action.
+
+image::.\images\policy_based_rl_01.png[align='center', 400, 200]
+
+This works for both discrete and continuous action space settings.
+
+* If action space is discrete: the network outputs a vector of probabilities (using softmax).
++
+[stem]
+++++
+\pi_{\theta}( a \, | \, s) = \frac{\text{exp}(f_{\theta}(s)_a)}{\sum_b \text{exp}(f_{\theta}(s)_b)}
+++++
++
+where stem:[f_{\theta}(s)_a] is the output from the network for action stem:[a], and stem:[f_{\theta}(s)_b] is the output from the network for other actions stem:[b].
+
+* If action space is continuous: the network outputs parameters of a distribution. For example, when we assume that the policy is Gaussian distributed over the action space, then the mean stem:[\mu] of the Gaussian could be the output of the neural network. The SD stem:[\sigma] of the Gaussian could be constant or can also be parameterized.
++
+[stem]
+++++
+\pi_{\theta}( a \, | \, s) = \mathcal{N}\left( a \, | \, \mu_{\theta}(s), \Sigma_{\theta}(s) \right)
+++++
++
+Then, we sample an action from this Gaussian distribution. This idea can be extended to any parameterized probability distribution (even multi-variable distribution).
+
+== Policy Optimization ==
+A policy stem:[\pi(\cdot)] is parameterized by parameter stem:[\theta] and denoted by stem:[\pi_{\theta}]. The performance (the value) of a policy stem:[\pi_{\theta}] is given by:
+
+[stem]
+++++
+J(\theta) = V^{\pi_{\theta}}(s) = \mathbb{E}_{\pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s_0 \right]
+++++
+
+which denotes the expected return when actions are sampled according to the policy stem:[\pi_{\theta}( a \, | \, s)].
+
+NOTE: We evaluate the policy from the start state stem:[S_0], not from any intermediate state. In general, the start state can come from a distribution.
+
+stem:[J(\theta)] can be used as the criterion function. Since we look for the optimal stem:[\theta] (the optimal weights and biases of the neural network), the criterion function is a function of only stem:[\theta]. As the policy is parameterized, if stem:[\theta] changes, the policy also changes. Our goal is to find the best policy in the policy space for the given MDP.
+
+[stem]
+++++
+\pi^*_{\theta} = \arg \max_{\pi_{\theta}} V^{\pi_{\theta}}(s) = \arg \max_{\pi_{\theta}} \mathbb{E}_{\pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s \right]
+++++
+
+What is the policy that will roll out good trajectories from stem:[S_0]? In short, we are looking for stem:[\pi^*_{\theta}] in the space of stochastic policies by finding that set of stem:[\theta] that maximizes stem:[J(\theta)].
+
+Let stem:[J(\theta)] be the policy objective function. Policy gradient algorithms search for a local maximum in stem:[J(\theta)] by ascending the gradient of the objective function stem:[J(\theta)] w.r.t. parameters stem:[\theta]. This eventually turns out to be the gradient of the policy
+
+[stem]
+++++
+\theta_{\text{new}} = \theta_{\text{old}} + \alpha \nabla_{\theta} J(\theta)
+++++
+
+* stem:[\nabla_{\theta} J(\theta)] is the gradient of the function that measures the performance of the policy.
+* stem:[\alpha] is the step size parameter.
+
+NOTE: In Q-learning and DQN, the stem:[Q_*] was supposed to satisfy the Bellman optimality equation. So, we came up with a loss function based on the Bellman optimality equation. Here in the policy case, we need to optimize the value of the policy, so we consider stem:[J(\theta)] to build the loss function.
+
+The gradient of the policy refers to the derivative of the log of the policy's action probabilities with respect to its parameters stem:[\theta]. It measures how changing the parameter stem:[\theta] changes the log probability of taking an action stem:[a] in a state stem:[s] — and hence, how we can adjust stem:[\theta] (thereby policy) to increase expected return stem:[J(\theta)].
+
+== Policy Gradient Formulation ==
+Let policy stem:[\pi] be parameterized by stem:[\theta] and denoted by stem:[\pi_{\theta}]. Let stem:[\tau \sim \pi_{\theta}] denote the state-action sequence or trajectory (without rewards) given by stem:[s_0, a_0, s_1, a_1, \dots, s_t, a_t, \dots].
+
+image::.\images\trajectory_sample.png[align='center', 400, 200]
+
+stem:[\mu_0] is the distribution from which the start state is sampled from. At stem:[s_0], we take an action stem:[a_0] as suggested by stem:[\pi_{\theta}], go to stem:[s_1] as defined by the transition probability matrix stem:[\mathbf{P}], and get a reward of stem:[r_1]. And the sequence continues.
+
+Then, stem:[P(\tau; \theta)] be the probability of finding a trajectory stem:[\tau] with policy stem:[\pi_{\theta}]:
+
+[stem]
+++++
+P(\tau; \theta) = P(s_0) \prod_{t=0}^\infty \pi_{\theta}(a_t \, | \, s_t) \, P(s_{t+1} \, | \, s_t, a_t)
+++++
+
+Given this trajectory stem:[\tau], we can define discounted cumulative reward stem:[G(\tau)] obtained by following trajectory stem:[\tau]:
+
+[stem]
+++++
+G(\tau) = \sum_{t=0}^\infty \gamma^t r_{t+1}
+++++
+
+Now, we can write our objective function stem:[J(\theta)] as:
+
+[stem]
+++++
+J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s_0 \right] = \sum_{\tau \sim \pi_{\theta}} \left[ P(\tau; \theta) \, G(\tau) \right]
+++++
+
+Our goal is to find stem:[\theta^*] such that stem:[\theta^* = \arg \max_{\theta} J(\theta)]. Taking gradient with respect to stem:[\theta] gives:
+
+[stem]
+++++
+\begin{align*}
+\nabla_{\theta} J(\theta) & = \nabla_{\theta} \left( \sum_{\tau} P(\tau; \theta) \, G(\tau) \right) \\
+& = \sum_{\tau} \nabla_{\theta} \left[ P(\tau; \theta) \, G(\tau) \right] \\
+
+& = \sum_{\tau} \frac{P(\tau; \theta)}{P(\tau; \theta)} \nabla_{\theta} \left[ P(\tau; \theta) \right] \, G(\tau) \\
+
+& = \sum_{\tau} \frac{\nabla_{\theta} P(\tau; \theta)}{P(\tau; \theta)} P(\tau; \theta) \, G(\tau) \\
+
+& = \sum_{\tau} \nabla_{\theta} \log P(\tau; \theta) \, P(\tau; \theta) \, G(\tau) && \left( \because \nabla_{\theta} \log f(x) = \frac{\nabla_{\theta} f(x)}{f(x)} \right) \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \nabla_{\theta} \log P(\tau; \theta) \, G(\tau) \right]
+\end{align*}
+++++
+
+Sample based estimate is given by rolling out stem:[K] such trajectories and computing:
+
+[stem, id='eq_1']
+++++
+\begin{align}
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \nabla_{\theta} \log P(\tau^{(i)}; \theta) \, G(\tau^{(i)})
+\end{align}
+++++
+
+But the above formula is not good enough for implementation. We need to have the knowledge of stem:[\mathbf{P}] matrix to compute stem:[P(\tau; \theta)] and its derivative. In the model free setting, we don't have it.
+
+[stem]
+++++
+\begin{align*}
+P(\tau^{(i)}; \theta) & = P(s_0) \prod_{t=0}^\infty \pi_{\theta}(a_t \, | \, s_t) \, P(s_{t+1} \, | \, s_t, a_t) \\
+\end{align*}
+++++
+
+As the term stem:[P(s_0)] is independent of stem:[\theta], stem:[\log P(s_0)] is a constant.
+
+[stem]
+++++
+\begin{align*}
+\nabla_{\theta} \log P(\tau^{(i)}; \theta) & = \nabla_{\theta} \log \left[ \prod_{t=0}^\infty P(s_{t+1}^{(i)} \, | \, s_t^{(i)}, a_t^{(i)}) \cdot \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)})   \right] \\
+
+& = \nabla_{\theta} \left[ \sum_{t=0}^\infty \log P(s_{t+1}^{(i)} \, | \, s_t^{(i)}, a_t^{(i)}) + \sum_{t=0}^\infty \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)})  \right] \\
+
+& = \nabla_{\theta} \sum_{t=0}^\infty \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \\
+
+& = \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \\
+
+\end{align*}
+++++
+
+The transition matrix stem:[\mathbf{P}] doesn't depend on stem:[\theta] (it doesn't depend on policy at all). So, its derivative is 0. On substituting it in <<eq_1, Equation 1>>, we get
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \right] \, \left[ \sum_{t=0}^\infty \gamma^t r^{(i)}_{t+1} \right]
+++++
+
+The above formulation provides an unbiased estimate of the policy gradient, and we can calculate it without using the dynamics of the model (the stem:[\mathbf{P}] matrix).
+
+*Intuition:*
+
+image::.\images\policy_grad_intuition.png[align='left', 400, 300]
+
+The top trajectory in the image has the largest stem:[G(\tau)], followed by the second trajectory. The last one has the lowest and negative stem:[G(\tau)]. The policy gradient methods drive the stem:[\theta] in such a way that it
+
+* Increases the probability of producing paths stem:[\tau] with positive stem:[G(\tau)].
+* Decreases the probability of producing paths stem:[\tau] with negative stem:[G(\tau)].
+
+Say in the gradient update, we moved from stem:[\theta_1] to stem:[\theta_2]. Now, suppose we produce 100 trajectories using stem:[\pi_{\theta_1}] and 100 using stem:[\pi_{\theta_2}]. The probability of getting negative stem:[G(\tau)] from the paths by stem:[\pi_{\theta_2}] is less than the probability of getting negative stem:[G(\tau)] from the paths by stem:[\pi_{\theta_1}].
+
+It is just a way of formalizing the notion of trial and error. We generate some paths using stem:[\pi_{\theta_1}], look at the result, tune stem:[\theta], and repeat the process.
+
+== MC Based Policy Gradient ==
+
+image::.\images\mc_policy_gradient.png[align='left', 600, 300]
+
+Here we should roll out the whole trajectory from the start state, and wait for the trajectory to end to make any update. This is not an online algorithm.
+
+Here we can have stem:[K=1] as well, but the variance of the gradient estimate stem:[\nabla_{\theta} J(\theta)] will be high (note here that we are taking the sample mean to estimate the gradient).
+
+== Connections to Maximum Likelihood ==
+
+The policy gradient expression is:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \right] \, \left[ \sum_{t=0}^\infty \gamma^t r^{(i)}_{t+1} \right]
+++++
+
+Suppose there is a scenario where we have access to a dataset of stem:[\mathcal{D} = \{(s_t^{(1)}, a_t^{(1)}), \dots, (s_t^{(K)}, a_t^{(K)})\} ] with stem:[t] running from 0 to stem:[\infty]. And we pose the problem as a supervised learning problem: given a state stem:[s_t], find stem:[a_t]. The target is the action here. Then, the log-likelihood of the given data is given by:
+
+[stem]
+++++
+\begin{align*}
+J_{MLE}(\theta) & \approx \log \left[ \prod_{i=1}^K \prod_{t=0}^\infty p\left(a_t^{(i)} \, | \, s_t^{(i)}, \theta \right) \right] \\
+
+& = \sum_{i=1}^K \left[ \sum_{t=0}^\infty \log \pi \left(a_t^{(i)} \, | \, s_t^{(i)}, \theta \right) \right] = \frac{1}{K} \sum_{i=1}^K \left[ \sum_{t=0}^\infty \log \pi \left(a_t^{(i)} \, | \, s_t^{(i)}, \theta \right) \right] 
+
+\end{align*}
+++++
+
+Note: stem:[\approx] is used because we are working with samples. Then, its gradient is:
+
+[stem]
+++++
+\nabla_{\theta} J_{MLE}(\theta) \approx \frac{1}{K} \sum_{i=1}^K \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi \left(a_t^{(i)} \, | \, s_t^{(i)}, \theta \right) \right] 
+++++
+
+The MLE gradient estimate, stem:[\nabla_{\theta} J_{MLE}(\theta)], (that is, the direction in which we move stem:[\theta]) is the same as the policy gradient estimate except for the stem:[G(\tau)] term. The MLE method for estimating stem:[\theta] just considers what action to take in a given state, whereas the policy gradient estimate also considers the consequences of taking the action into the future. As this is a sequential decision-making problem, the policy gradient estimate gives us the correct direction to move.
+
+== Issues with Policy Gradient Estimate ==
+
+The policy gradient estimate, stem:[\nabla_{\theta} J(\theta)], is unbiased but has high variance because we are rolling out the whole trajectory which has a lot of stochastic components. We are just doing gradient descent in the MC based policy gradient algorithm. Upon the right selection of the learning rate, the algorithm is guaranteed to converge to a local optimum in the parameter stem:[\theta] space. (Note even this convergence guarantee wasn't there for DQN)
+
+But since the variance is high, it takes a lot of time to converge. Therefore, we need some variance reduction techniques in practice.

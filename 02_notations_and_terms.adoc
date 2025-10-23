@@ -52,7 +52,7 @@ Assume there are stem:[n] states in total. State transition matrix stem:[\mathca
 \end{bmatrix}
 ++++
 
-CAUTION: The number of states stem:[n] can be (discrete)infinite as well.
+CAUTION: The number of states stem:[n] can be (discrete) infinite as well.
 
 === Markov Chain ===
 A Markov chain or Markov process is a particular type of stochastic process stem:[\{s_t\}_{t \in T}] in which every element (states) of the process satisfies the Markov property. It is represented by tuple stem:[<\mathcal{S}, \mathcal{P}>], where stem:[\mathcal{S}] denotes the set of states and stem:[\mathcal{P}] denotes the state transition probability.
@@ -114,7 +114,16 @@ We made an important assumption in arriving at the above expression. That is, th
 
 Markov chains generated using such transition matrices are called *homogeneous* Markov chains.
 
-NOTE: I.I.D observations trivially satisfy this property.
+[NOTE]
+====
+I.I.D observations trivially satisfy the Markov property as each observation is independent.
+[stem]
+++++
+P(S_{t+1} = s_{t+1} \, | \, s_t) = P(S_{t+1} =s_{t+1} \, | \, s_1, \dots, s_t) = P(S_{t+1} = s_{t+1})
+++++
+
+And the underlying distribution from which the samples are drawn remains the same through time.
+====
 
 *Example 02*: Die roll experiment
 
@@ -132,7 +141,7 @@ A state stem:[s \in \mathcal{S}] is called absorbing state if it is impossible t
 [stem]
 ++++
 \mathcal{P}_{ss'} = \begin{cases}
-1, & \text{if } s=s' \\
+1, & \text{if } s'=s \\
 0, & \text{otherwise}
 \end{cases}
 ++++

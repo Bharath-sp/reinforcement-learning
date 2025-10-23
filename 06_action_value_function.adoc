@@ -50,12 +50,16 @@ stem:[V^{\pi}(s)] in terms of stem:[Q^{\pi}(s, a)]:
 
 [stem]
 ++++
-V^{\pi}(s) = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \, Q^{\pi}(s, a)
+\begin{align*}
+V^{\pi}(s) & = \mathbb{E} \left[ r_{t+1} + \gamma V(s') \, | \,  S_t = s \right] \\
+& = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \sum_{s' \in \mathcal{S}} \mathcal{P}_{ss'}^a \left[ \mathcal{R}_{ss'}^a + \gamma V(s') \right] \\
+& = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \, Q^{\pi}(s, a) \\
+\end{align*}
 ++++
 
 Taking the first action in stem:[Q^{\pi}(s, a)] also as dictated by the policy. We take average over all possible actions prescribed by the policy stem:[\pi] at state stem:[s].
 
-stem:[Q^{\pi}(s, a)] in terms of stem:[V^{\pi}(s)]:
+stem:[Q^{\pi}(s, a)] in terms of stem:[V^{\pi}(s')]:
 
 [stem]
 ++++
@@ -109,7 +113,7 @@ image::.\images\mdp_nav_prob.png[align='center',200, 200]
 
 The goal is to reach any of the goal state in as minimum moves as possible. We need to find the optimal stem:[\pi_*] for this problem, i.e., the best action that we can take at every state (a mapping from state space to action space). For instance, the optimal action at state 11 will be 'down'. There is only one optimal policy we can make at state 11.
 
-At state 10, there are two optimal actions, either down or right. Two optimal (deterministic) policies can be constructed this way. But we can construct infinite optimal policies at state 10 on considering stochastic policies. The policies can be
+At state 10, there are two optimal actions, either down or right. Two optimal (deterministic) policies can be constructed this way. But we can construct infinite stochastic optimal policies at state 10. The policies can be
 
 [stem]
 ++++
@@ -151,7 +155,7 @@ Therefore, if we are searching for the solution to an MDP in the policy space, w
 image::.\images\policy_space.png[align='center',200, 200]
 
 == Greedy Policy ==
-Say we are given an arbitrary action-value function stem:[Q^{\pi}(s,a)] (not necessarily the optimal one), we can find a greedy policy as follows
+Say we are given an action-value table, stem:[Q^{\pi}(s,a)] for all state-action pairs, which is computed under an arbitrary policy stem:[\pi] (not necessarily the optimal one), then we can find a greedy policy stem:[\pi'] as follows
 
 [stem]
 ++++
@@ -161,7 +165,7 @@ Say we are given an arbitrary action-value function stem:[Q^{\pi}(s,a)] (not nec
 \end{cases}
 ++++
 
-This policy is greedy with respect to the given stem:[Q^{\pi}(s,a)]. The policy that is greedy with respect to stem:[Q_*] is the optimal policy stem:[\pi_*(a \, | \, s)].
+At stem:[s], we read the stem:[Q^{\pi}(s,a)] for all the state-action pairs from the given table, and choose that stem:[a] for which stem:[Q^{\pi}(s,a)] is maximum. This resulting policy is greedy with respect to the given stem:[Q^{\pi}(s,a)]. The policy that is greedy with respect to stem:[Q_*] is the optimal policy stem:[\pi_*(a \, | \, s)].
 
 Using the relationship between stem:[V^{\pi}] and stem:[Q^{\pi}], for a given stem:[V^{\pi}(s)], we can also define stem:[\pi'(a \, | \, s)] as follows
 
@@ -173,11 +177,11 @@ Using the relationship between stem:[V^{\pi}] and stem:[Q^{\pi}], for a given st
 \end{cases}
 ++++
 
-At stem:[s], there will be an action (or actions in case of stochastic policy) recommended by the given policy stem:[\pi], but here we take that permissible action for which the quantity stem:[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right\] ] is maximum. Then, we arrive at a new (deterministic) policy stem:[\pi'] which is derived as greedy with respect to the given stem:[V^{\pi}(s)].
+At stem:[s], we try all possible actions, and take that action for which the quantity stem:[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right\] ] is maximum. Then, we arrive at a new (deterministic) policy stem:[\pi'] which is derived as greedy with respect to the given stem:[V^{\pi}(s)].
 
 == Relationship between stem:[V_*(\cdot)] and stem:[Q_*(\cdot, \cdot)] ==
 
-Suppose we are given stem:[Q_*(s,a), \, \forall s \in \mathcal{S}], can we find stem:[V_*(s)]?
+Suppose we are given stem:[Q_*(s,a), \, \forall (s,a)], can we find stem:[V_*(s)]?
 
 Being at stem:[s], to get stem:[V_*(s)] from stem:[Q_*(s,a)], we should take the first action also as dictated by the optimal policy stem:[\pi_*].
 
@@ -195,6 +199,23 @@ On the other hand, suppose we are given stem:[V_*(s), \, \forall s \in \mathcal{
 Q_*(s, a) = \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V_*(s') \right]
 ++++
 
+
+== Summary ==
+
+For a given policy stem:[\pi], we can easily find the value stem:[V^{\pi}(s)] for all stem:[s \in \mathcal{S}] using the Bellman evaluation equation. Having found stem:[V^{\pi}(s)], we can find stem:[Q^{\pi}(s,a)] using the relation
+
+[stem]
+++++
+Q^{\pi}(s, a) = \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V^{\pi}(s') \right]
+++++
+
+But for a given MDP, our aim is to find either the optimal state-value function, action-value function, or the optimal policy.
+
+* If we had known the optimal policy, we can easily find the corresponding optimal state values and action-values for all states using the Bellman evaluation equation.
+* If we had known the optimal state value or action-values for all states (somehow), we can find one of the deterministic optimal policies by being greedy with respect to the given stem:[V_*] or stem:[Q_*].
+
+But we don't know any of them. So, we proceed to Value iteration or Policy iteration algorithm.
+
 == MDP + Policy is MRP ==
 Say we are given an MDP stem:[<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R}, \gamma >] and a policy stem:[\pi]. From the given policy, the action to take at each state is determined. So, MDP and policy will induce an MRP. The MRP is given by stem:[(\mathcal{S}, \mathcal{P}^{\pi}, \mathcal{R}^{\pi}, \gamma)] where
 
@@ -207,9 +228,7 @@ Say we are given an MDP stem:[<\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R
 \end{align*}
 ++++
 
-* stem:[\mathcal{P}^{\pi}(s' \, | \, s)] represents the probability of getting to stem:[s'] from stem:[s] under the policy stem:[\pi]. This is just a specialized transition probability matrix which is driven by policy stem:[\pi]. We get a different transition probability matrix for each given policy stem:[\pi].
+* stem:[\mathcal{P}^{\pi}(s' \, | \, s)] represents the probability of getting to stem:[s'] from stem:[s] under the policy stem:[\pi].
 
 * stem:[\mathcal{R}^{\pi}(s)] represents the average reward that we get in state stem:[s] under the policy stem:[\pi].
-
-
 

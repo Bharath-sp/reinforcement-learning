@@ -66,13 +66,11 @@ NOTE: We deal with only single agent setting RL problems.
 
 == Historical Notes ==
 
-Learning by trial and error: Random actions by agent is similar to exploration. Reward obtained from doing random actions can be remembered in terms of updating the policy or value function. The learning comes from the reward. Examples of learning by trial and error: Thondrike's Cat psychophysical experiment.
-
-The law of effect (1898) states that any behaviour that is followed by pleasant consequences is likely to be repeated, and any behaviour that is followed by unpleasant consequences is likely to be stopped. The actions that result in pleasant consequences are given higher probability than other actions, over the time after learning.
+Learning by trial and error: Random actions by agent is similar to exploration. Reward obtained from doing random actions can be remembered in terms of updating the policy or value function. The learning comes from the reward. Examples of learning by trial and error: Thondrike's Cat psychophysical experiment. The law of effect (1898) states that any behaviour that is followed by pleasant consequences is likely to be repeated, and any behaviour that is followed by unpleasant consequences is likely to be stopped. The actions that result in pleasant consequences are given higher probability than other actions, over the time after learning.
 
 In Pavlov's dog experiment, the dog starts salivating in anticipation of food once it is shown the tuning fork. The dog associates the state with a future reward. Through this experiment, it is shown that there can be an element of time in learning. The idea of learning by trial and run and learning across time was combined into a method called *Temporal Difference*. Temporal difference learning is an approach to learning how to predict a quantity that depends on future values of a given signal. TD learning forms the basis of almost all RL algorithms that we see today.
 
-Markov Decision Process (Bellman, 1957) is used as a framework to model and solve sequential decision problem.
+Markov Decision Process (Bellman, 1957) is used as a framework to model and solve sequential decision problems.
 
 The idea of Temporal difference and MDP were brought together by Watkins (1989) to propose the famous *Q-learning algorithm*. This forms our modern reinforcement learning. The modern RL also extends to using deep neural networks for learning sequential decision-making problems. Now, we are in the era of deep reinforcement learning.
 

@@ -1,0 +1,205 @@
+= Variance Reduction =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+The policy gradient estimate is:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \right] \, \left[ \sum_{t=0}^\infty \gamma^t r^{(i)}_{t+1} \right]
+++++
+
+One can rewrite this equation as:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \cdot  \left[ \sum_{t=0}^\infty \gamma^t r^{(i)}_{t+1} \right] \right]
+++++
+
+There are three techniques to reduce the variance of this estimate.
+
+== Effect of Discount Factor ==
+Having a discount factor stem:[\gamma <1] in any MDP (finite, infinite, or episodic) reduces the variance of the estimate. For infinite horizon MDPs, we *should* anyway have a discount factor stem:[< 1] to prove the convergence of the algorithm. In addition, it also plays an additional role of reducing the variance of the policy gradient estimate when working with the policy gradient technique.
+
+In the policy gradient estimate expression, one of the random components is the reward. The reward we get at each time step depends on the state we visit in the future. When the discount factor is less than 1, say stem:[0.99], the weight we assign to the distant future rewards will be negligibly small. This way, the variance associated with those terms will also be tampered down.
+
+Ignoring reward terms 'far' into the future gives us a reasonable approximation to policy gradient but with lower variance.
+
+*Aside: Score Function:*
+
+The score function in policy gradient is the term stem:[\nabla_{\theta} \log \pi(a_t \, | \, s_t)] (grad log a probability distribution is generally called a score function). The expectation of the score function is zero.
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}_{a_t \, | \, s_t} \left[ \nabla_{\theta} \log \pi(a_t \, | \, s_t) \right] & = \int_{a_t} \pi(a_t \, | \, s_t)\, \nabla_{\theta} \log \pi(a_t \, | \, s_t) \, da_t \\
+
+& = \int_{a_t} \nabla_{\theta} \pi(a_t \, | \, s_t) \, da_t \\
+
+& = \nabla_{\theta} \int_{a_t} \pi(a_t \, | \, s_t) \, da_t \\ 
+& = \nabla_{\theta} \, 1 = 0
+\end{align*}
+++++
+
+* We are taking average of stem:[\nabla_{\theta} \log \pi(a_t \, | \, s_t)] over all possible actions suggested by the policy stem:[\pi].
+
+* Step 2: Using stem:[\nabla_{\theta} \log f(x) = \frac{\nabla_{\theta} f(x)}{f(x)}].
+
+* Step 3: Differentiation is with respect to stem:[\theta], and the integration is with respect to stem:[a_t]. And as the continuity conditions are met, we can interchange the derivative and the integral.
+
+== Principle of Causality ==
+
+Causality: Policy (or the action we take) at time stem:[t'] cannot affect reward at time stem:[t] when stem:[t < t'] because we already received the reward at stem:[t]. When we take an action at time step stem:[t], it can only affect the rewards from time step stem:[t] and onwards. Only the current and future rewards are affected.
+
+Recall in the policy gradient estimate expression, every time we take an action stem:[a_t] at a state stem:[s_t] for any stem:[t], we multiply by the whole stem:[G(\tau)].
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \cdot  \left[ \sum_{t=0}^\infty \gamma^t r^{(i)}_{t+1} \right] \right]
+++++
+
+image::.\images\causality_01.png[align='center', 300, 200]
+
+Say we are at time step 10, at stem:[s_{10}], taking an action stem:[a_{10}]. But we are considering the rewards from starting from stem:[t=0] to stem:[\infty]. Let stem:[\tau_{a:b}] denote the states and actions visited from time stem:[a] to stem:[b] and
+
+[stem]
+++++
+G_{a:b}(\tau) = \sum_{t=a}^b \gamma^t r_{t+1}
+++++
+
+is the sum of discounted reward starting from time stem:[a] to stem:[b]. Therefore, for any time stem:[t], we have
+
+[stem]
+++++
+G(\tau) = G_{0:t-1}(\tau) + G_{t:\infty}(\tau)
+++++
+
+[stem]
+++++
+\begin{align*}
+\nabla_{\theta} J(\theta) & = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  \left[ \sum_{t=0}^\infty \gamma^t r_{t+1} \right] \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G(\tau) \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{0:t-1}(\tau)  + \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{0:t-1}(\tau) \right] + \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] \\
+
+\end{align*}
+++++
+
+Consider evaluating the expectation of the first term:
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{0:t-1}(\tau) \right] & = \left[ \sum_{t=0}^\infty  G_{0:t-1}(\tau) \cdot \mathbb{E}_{\tau \sim \pi_{\theta}} \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \right] \\
+
+& = \sum_{t=0}^\infty  G_{0:t-1}(\tau) \cdot 0 = 0
+\end{align*}
+++++
+
+For each step stem:[t], all the rewards before time stem:[t] are observed, so they are constant. We are using the principle of causality here. Therefore, the term stem:[G_{0:t-1}] is a constant for the expectation. And we know that the expectation of the score function is 0. We can actually see that the first term is 0 in expectation. So, we can drop this term, and take sample estimate only using the second term. This helps us reduce the variance of the estimate. Therefore, the refined policy gradient estimate is given by
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] 
+++++
+
+Using the principle of causality, we get a better estimate for stem:[\nabla_{\theta} J(\theta)].
+
+=== Temporal Structure ===
+The sample estimate of the policy gradient expression is given by
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \cdot  \left[ \sum_{t'=t}^\infty \gamma^{t'-t} r^{(i)}_{t'+1} \right] \right]
+++++
+
+The above policy gradient estimate with temporal structure is also an unbiased estimate of the true policy gradient but has lower variance since it has 'thrown out' a few terms.
+
+image::.\images\causality_02.png[align='center', 300, 200]
+
+== Adding a Baseline ==
+
+Say we have a set of numbers stem:[\{5,6,7\}]. Let's calculate its variance about zero. It turns out to be stem:[(5^2 + 6^2 + 7^2)/3 = 28.67]. Subtracting the mean recenters the data around zero, so the deviations are smaller on average. The centered data is stem:[\{-1,0,1\}]. Then, the variance is stem:[\frac{2}{3} = 0.67]. Variance dropped from 28.67 to 0.67 because we removed the overall offset (mean 6).
+
+*Need for a Baseline:*
+
+When all the paths generated from policy stem:[\pi_{\theta_i}] have a positive stem:[G(\tau)], how can we identify better paths? We obviously prefer those paths that give the maximum rewards. The gradient descent algorithm automatically takes care of that, but instead we can also add a baseline to specify that a trajectory with stem:[G(\tau)] below this threshold is bad, and above this is preferable.
+
+When we get trajectories with positive and negative stem:[G(\tau)], 0 was the (implicit) trivial baseline. But in this case, what should be the baseline? Adding a baseline actually reduces the variance of the policy gradient estimate.
+
+Suppose stem:[b(s_t)] be a baseline that is a function of only stem:[s_t] (the state observed at time step stem:[t]). At time stem:[t], the stem:[s_t] is known, so there is no randomness in stem:[b(s_t)]. Then, for any stem:[t], if we calculate this term:
+
+[stem]
+++++
+\mathbb{E}_{a_t \, | \, s_t} \left[ b(s_t) \nabla_{\theta} \log \pi_{\theta} (a_t \, | \, s_t) \right] = b(s_t) \, \mathbb{E}_{a_t \, | \, s_t} \left[ \nabla_{\theta} \log \pi_{\theta} (a_t \, | \, s_t) \right] = 0 
+++++
+
+Therefore,
+
+[stem]
+++++
+\begin{align*}
+\nabla_{\theta} J(\theta) & = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] - \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty  b(s_t) \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot [G_{t:\infty}(\tau) - b(s_t)] \right] 
+
+\end{align*}
+++++
+
+Subtracting a baseline doesn't introduce any bias (that is, change the value of the gradient estimate) since the expectation of the term is zero. Any baseline, that is a function of stem:[s_t] (or a constant) can be used, and we still get an unbiased estimate of the policy gradient. But doing so reduces the variance of the estimate - exactly like centering data around the mean. There are various choices of baselines that can be used. The popular choices are:
+
+* Constant baseline:
++
+[stem]
+++++
+b =  \mathbb{E}[G(\tau)] \approx \frac{1}{K} \sum_{i=1}^K G(\tau^{(i)})
+++++
++
+This baseline value is a constant number, and can be calculated once we have the stem:[K] trajectories. It is not time step dependent.
+
+* Time dependent baseline:
++
+[stem]
+++++
+b_t =  \frac{1}{K} \sum_{i=1}^K G_{t:\infty}(\tau^{(i)})
+++++
++
+This baseline has to be calculated at every time step. It is not state-dependent but time step dependent.
+
+* Optimal baseline (minimum variance baseline):
++
+[stem]
+++++
+b =  \frac{\mathbb{E}_{\tau} [\nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t)^2 G_{t:\infty}(\tau)] }{\mathbb{E}_{\tau} [\nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t)^2]}
+++++
++
+If we use this baseline, the variance of the policy gradient estimate will be minimum. But rarely used in practice.
+
+* State dependent baseline:
++
+[stem]
+++++
+b(s) = \mathbb{E}_{\tau \sim \pi_{\theta}} [r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots \, | \, s_t = s] = V^{\pi}(s)
+++++
++
+This baseline is a function of stem:[s_t] (the state at time stem:[t]), so it has to be calculated at every time step. At every time step, from an observed state stem:[s_t], we roll out several trajectories under the current policy stem:[\pi_{\theta_i}] and calculate the expected sum of discounted rewards. This is a costly exercise.
++
+image::.\images\v_baseline_01.png[align='center', 600, 300]
++
+But when the policy is deterministic, this baseline will be equal to stem:[G_{t:\infty}(\tau)] (the Q-function). This is not a problem as we are dealing with stochastic policies in policy gradient methods.
+
+== Vanilla Policy Gradient Algorithm ==
+
+image::.\images\mc_policy_gradient_02.png[align='left', 700, 400]
+
+This is still a Monte-Carlo based algorithm. Online way of doing this will be addressed by the Actor-Critic methods.
+
+The REINFORCE (the previous algorithm) and Vanilla policy gradient as described above are on-policy algorithms because we are using trajectories produced from stem:[\pi_{\theta}] to update stem:[\theta]. That is, we are improving the policy using samples from the same policy. There is also an off-policy way to do policy gradient algorithms (but not discussed in this course).

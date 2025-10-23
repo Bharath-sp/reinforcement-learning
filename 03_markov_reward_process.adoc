@@ -22,31 +22,27 @@ NOTE: In Markov reward process, there is no notion of action; we don't make any 
 .A simple grid world
 image::.\images\mrp_eg_01.png[align='center',500, 200]
 
-If we get to state stem:[s_1], we get a reward of -6. For the Markov chain stem:[\{s_2, s_3, s_2, s_1, s_2, \dots\}], the corresponding reward sequence is stem:[\{-1, 0,-1,-6,-1, · · · \}].
-
-It is important to note that there is no notion of action here; we are not making any decision. We are making moves only by the induced probabilities. The chain is generated only by the probabilities.
+If we get to state stem:[s_1], we get a reward of -6. For the Markov chain stem:[\{s_2, s_3, s_2, s_1, s_2, \dots\}], the corresponding reward sequence is stem:[\{-1, 0,-1,-6,-1, · · · \}]. It is important to note that we are making moves only by the induced probabilities. The chain is generated only by the probabilities.
 
 *Example 02:* Snakes and Ladders
 
 .Snakes and Ladders
 image::.\images\mrp_eg_02.png[align='center',300, 200]
 
-The stochastic sequences from this snakes and ladders problem will satisfy the Markov property. Therefore, the underlying stochastic sequence is a Markov process. 
-
-It is important to note that there is no notion of action here; we just obey the number on the face of the die.
+The stochastic sequences from the snakes and ladders problem will satisfy the Markov property. Therefore, the underlying stochastic sequence is a Markov process. It is important to note that there is no notion of action here; we just obey the number on the face of the die.
 
 * States stem:[\mathcal{S} = \{s_1, s_2, \dots, s_{100}\}].
 * Transition probability matrix stem:[\mathcal{P}] can be computed.
 
-At time step stem:[t], say we are at state stem:[s_{36}]. We can go to any of the next 6 states depending upon the outcome of the die roll. So from stem:[s_{36}], the sequence of states that we visit is a stochastic sequence governed by a transition probability matrix. As all the states satisfy the Markov property, all the possible sequences form a Markov Chain.
+At time step stem:[t], say we are at state stem:[s_{36}]. We can go to any of the next 6 states depending upon the outcome of the die roll. So from stem:[s_{36}], the sequence of states that we visit is a stochastic sequence governed by a transition probability matrix. As all the states satisfy the Markov property, every possible sequence forms a Markov Chain.
 
 The objective is to reach state stem:[s_{100}] in as less number of die rolls as possible. Can we formulate the game of Snakes and Ladders as a MRP? To do so we need to define a suitable reward function stem:[\mathcal{R}] and a discounting factor stem:[\gamma].
 
 == Total Return ==
 
-At each time step stem:[t], there is a reward stem:[r_{t+1}] associated with being in state stem:[s_t]. Ideally, we would like the agent (nature in this case, as there is no action involved) to pick such trajectories in which the cumulative reward accumulated by traversing such a path is high.
+At each time step stem:[t], there is a reward stem:[r_{t+1}] associated with being in state stem:[s_t]. Ideally, we would like the agent (nature in this case, as there is no action involved) to pick such trajectories in which the cumulative reward is high.
 
-Being in a state stem:[s_t], there are so many trajectories possible. Let's assume that any reward sequence is given by stem:[\{r_{t+1}, r_{t+2}, r_{t+3}, \dots\}]. Then, we need to pick a trajectory for which this summation is maximum stem:[r_{t+1} + r_{t+2} + r_{t+3} + \dots].
+Being at state stem:[s_t], there are so many trajectories possible. Let's assume that any reward sequence is given by stem:[\{r_{t+1}, r_{t+2}, r_{t+3}, \dots\}]. Then, we need to pick a trajectory for which this summation is maximum stem:[r_{t+1} + r_{t+2} + r_{t+3} + \dots].
 
 For any time step stem:[t], define stem:[G_t] to be
 
@@ -72,7 +68,8 @@ G_t = r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3} + \dots = \sum_{k=0}^{\infty} 
 
 Now, stem:[G_t] is the total discounted return starting from time stem:[t]. The immediate reward stem:[r_{t+1}] is given the full value, and the future rewards are discounted.
 
-* If stem:[\gamma < 1], then the infinite sum has a finite value, provided the rewards are bounded. If stem:[\gamma=1] in an infinite horizon setting, the sum can diverge (e.g., if rewards are constant and positive). That makes stem:[V^{\pi}(s)] undefined unless the process is episodic (guaranteed termination in finite time).
+* If stem:[\gamma < 1], then the infinite sum has a finite value, provided the rewards are bounded. If stem:[\gamma=1] in such a setting,
+the sum diverges (with positive and constant rewards). So, in an infinite horizon setting, we *always* set stem:[\gamma < 1]. In finite or episodic (guaranteed termination in finite time) settings, where all possible sequences terminate, we can use stem:[\gamma=1].
 
 * If stem:[\gamma] close to 0, the agent is concerned only with immediate reward (myopic).
 
@@ -84,14 +81,12 @@ stem:[\gamma] helps us
 
 * Avoid infinite rewards that we get by traversing through a cycle (going through the same states in a loop) or in infinite horizon setting.
 
-In finite MDPs or MRPs, it is sometimes possible to use an undiscounted reward (i.e. stem:[\gamma=1] if all possible sequences terminate. But in matrix formulation, there is the possibility of non-existence of the inverse of the matrix. To avoid such scenarios, we always set stem:[\gamma] to be less than 1.
-
 NOTE: Even if stem:[\gamma=0.9], the importance given to, say stem:[r_{t+10}], will become negligible. So, we don't worry about the future that is very far from now.
 
 Being in state stem:[s_t], we may know stem:[r_{t+1}], but we never know about the future rewards. The future rewards stem:[\{r_{t+2}, r_{t+3}, \dots\}] can take any value. Their value depends on the state stem:[\{s_{t+1}, s_{t+2}, \dots\}] that we see respectively. Therefore, stem:[G_t] becomes a random variable at time stem:[t]. The value of stem:[G_t] depends on the realization of the rewards stem:[\{r_{t+2}, r_{t+3}, \dots\}] which in turn depends on the states stem:[\{s_{t+1}, s_{t+2}, \dots\}].
 
 === Assigning Rewards and Discount Factor ===
-How can we assign rewards to each state so that our objective of reaching state stem:[s_{100}] in as less number of die rolls as possible is achieved?
+For the snakes and ladders problem, how can we assign rewards to each state so that our objective of reaching state stem:[s_{100}] in as less number of die rolls as possible is achieved?
 
 We may think of giving a positive number reward to states that have ladder, but the sequence can go in a cyclic fashion and keep accumulating rewards. We can achieve maximum cumulative rewards by traversing through the non-absorbing states again and again, without reaching the goal state. To avoid that, we give a negative number reward to (penalize) all the non-absorbing states, and then try to *maximize* the cumulative rewards. The best reward function in this case will be
 
@@ -102,7 +97,7 @@ We may think of giving a positive number reward to states that have ladder, but 
 \end{cases}
 \]
 
-For every non-absorbing state, we get a reward of -1. We keep accumulating -1 until we reach stem:[s_{100}]. We should pick a path that accumulates less (negative) rewards, which translates to reaching stem:[s_{100}] in as less number of die rolls as possible.
+For every non-absorbing state, we get a reward of -1. We keep accumulating -1 until we reach stem:[s_{100}]. We should pick a path that accumulates minimum penalty (or maximum rewards), which translates to reaching stem:[s_{100}] in as less number of die rolls as possible.
 
 NOTE: The rewards can be any negative number, but for simplicity, we have considered -1. A reward of -1 also comes with a nice interpretation which is discussed below.
 
@@ -113,22 +108,18 @@ CAUTION: Don't think we should penalize more for states with snakes and less for
 The underlying probabilities governed by the transition matrix take us to various states. The snakes and ladders is the special case of the simple grid world example.
 
 == Value Function ==
-In the snakes and ladders example, are all the intermediate states equally 'valuable' just because they have equal reward? We get a reward of -1 for both stem:[s_2] and stem:[s_{99}]. But are they both equally valuable? We prefer to be in state stem:[s_{99}] than state stem:[s_2]. Therefore, state stem:[s_{99}] is more *valuable* than state stem:[s_2] because we can reach stem:[s_{100}] in relatively fewer die rolls from stem:[s_{99}] than from stem:[s_2], on an average. 
+In the snakes and ladders example, are all the intermediate states equally 'valuable' just because they have equal reward? We get a reward of -1 for both stem:[s_2] and stem:[s_{99}]. But are they both equally valuable? We prefer to be in state stem:[s_{99}] than state stem:[s_2]. Therefore, state stem:[s_{99}] is more *valuable* than state stem:[s_2] because we can reach stem:[s_{100}] in relatively fewer die rolls from stem:[s_{99}] than from stem:[s_2], on an average. The *Reward* is just a number that we get by being in the state, but we can also define the *value* of being in the state.
 
-*Reward* is just a number that we get by being in the state, but we can also define the *value* of being in the state.
-
-The value function stem:[V(s)] gives the long-term value of state stem:[s \in \mathcal{S}]
+The value function stem:[V(s)] of state stem:[s \in \mathcal{S}] is defined as
 
 [stem]
 ++++
 V(s) = \mathbb{E}(G_t \, | \, S_t = s) = \mathbb{E} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s \right)
 ++++
 
-At time step stem:[t], we are in state stem:[s]. From here, there are so many possible sequences to reach the goal state. In the snakes and ladders example, every sequence ends as we reach the goal state. In general cases, we may have to wait for an infinite amount of time for the sequence to end. In either cases, the summation converges and each such sequence has a cumulative reward stem:[G_t]. The value for being in state stem:[s_t] is the average of all those stem:[G_t]'s.
+At time step stem:[t], we are in state stem:[s]. From here, there are so many possible sequences to reach the goal state. In the snakes and ladders example, every sequence ends as we reach the goal state. In general cases, we may have to wait for an infinite amount of time for the sequence to end. In either cases, the summation converges and each such sequence has a cumulative reward stem:[G_t]. The value for being in state stem:[s_t] is the average of all those stem:[G_t]'s. The value function stem:[V(s)] determines the value of being in state stem:[s]. It measures the expected total discounted rewards we get from being at state stem:[s].
 
-Value function stem:[V(s)] determines the value of being in state stem:[s]. It measures the potential future rewards we may get from being in state stem:[s].
-
-stem:[V(s)] is independent of time stem:[t]; it doesn't matter when we reach a state, the value of the state always remains the same.
+IMPORTANT: stem:[V(s)] is independent of time stem:[t]; it doesn't matter when we reach a state, the value of the state always remains the same.
 
 === Example ===
 Consider the following MRP. Assume stem:[\gamma=1] and the goal state is stem:[s_8]. We are in state stem:[s_1]. What is the value of being in state stem:[s_1]?
@@ -138,17 +129,18 @@ image::.\images\value_func_01.png[align='center',400, 300]
 
 There are four possible sequences from stem:[s_1] to stem:[s_4]. The sequences are:
 
-* stem:[\{s_1, s_2, s_4, s_8\}] with a cumulative reward of 8. Probability of taking this sequence is stem:[0.6 * 0.3  = 0.18].
-* stem:[\{s_1, s_2, s_5, s_8\}] with a cumulative reward of 9. Probability of this sequence is stem:[0.6 * 0.7 = 0.42].
-* stem:[\{s_1, s_3, s_6, s_8\}] with a cumulative reward of 15. Probability of this sequence is stem:[0.4 * 0.8 = 0.32].
-* stem:[\{s_1, s_3, s_7, s_8\}] with a cumulative reward of 13. Probability of this sequence is stem:[0.4 * 0.2 = 0.08].
+* stem:[\{s_1, s_2, s_4, s_8\}] with a cumulative reward of stem:[G_t = 8].
+* stem:[\{s_1, s_2, s_5, s_8\}] with a cumulative reward of stem:[G_t = 9].
+* stem:[\{s_1, s_3, s_6, s_8\}] with a cumulative reward of stem:[G_t = 15].
+* stem:[\{s_1, s_3, s_7, s_8\}] with a cumulative reward of stem:[G_t = 13].
 
-Therefore, stem:[V(s_1) = 0.18 * 8 + 0.42 * 9 + 0.32 * 15 + 0.08 * 13 = 11.06]. As per the formula, we get
+We need to find the expected total discounted reward, stem:[\mathbb{E} \left[ G_t \, | \, S_t = s_1 \right\]]. At time stem:[t], we are in state stem:[s_1].
 
 [stem]
 ++++
 \begin{align*}
-V(s_1) & = \mathbb{E} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s_1 \right) \\
+V(s_1) & = \mathbb{E} \left( G_t \, | \, S_t = s_1 \right) \\
+& = \mathbb{E} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t = s_1 \right) \\
 & =  \sum_{k=0}^3 \mathbb{E} \left( \gamma^k r_{t+k+1} \, | \, S_t = s_1 \right) = \sum_{k=0}^3 \gamma^k  \mathbb{E} \left( r_{t+k+1} \, | \, S_t = s_1 \right)\\
 & = \mathbb{E} \left( r_{t+1} \, | \, S_t = s_1 \right) + \gamma \mathbb{E} \left( r_{t+2} \, | \, S_t = s_1 \right) + \gamma^2 \mathbb{E} \left( r_{t+3} \, | \, S_t = s_1 \right) + \gamma^3 \mathbb{E} \left( r_{t+4} \, | \, S_t = s_1 \right)\\
 \end{align*}
@@ -156,21 +148,61 @@ V(s_1) & = \mathbb{E} \left( \sum_{k=0}^{\infty} \gamma^k r_{t+k+1} \, | \, S_t 
 
 where
 
-* stem:[\mathbb{E} \left( r_{t+1} \, | \, S_t = s_1 \right) = r_{t+1} = -1]
-* stem:[\mathbb{E} \left( r_{t+2} \, | \, S_t = s_1 \right) = P(S_{t+1} = s_2 \, | \, S_t = s_1) * \mathcal{R}(s_2) + P(S_{t+1} = s_3 \, | \, S_t = s_1) * \mathcal{R}(s_3) = 0.6 * 1 + 0.4 * 3 = 1.8]
+* stem:[\mathbb{E} \left( r_{t+1} \, | \, S_t = s_1 \right) = \mathcal{R}(s_1) = -1]
+
+* stem:[\mathbb{E} \left( r_{t+2} \, | \, S_t = s_1 \right)] is given by
++
+[stem]
+++++
+\begin{align*}
+\mathbb{E} \left( r_{t+2} \, | \, S_t = s_1 \right) & = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) * \mathcal{R}(s') \\
+& = P(S_{t+1} = s_2 \, | \, S_t = s_1) * \mathcal{R}(s_2) + P(S_{t+1} = s_3 \, | \, S_t = s_1) * \mathcal{R}(s_3) \\
+& = 0.6 * 1 + 0.4 * 3 = 1.8
+\end{align*}
+++++
++
+On a side note, the expression can be written as:
++
+[stem]
+++++
+\begin{align*}
+\mathbb{E} \left( r_{t+2} \, | \, S_t = s_1 \right) & = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \mathbb{E} \left( r_{t+2} \, | \, S_t = s_1, S_{t+1} = s' \right) \\
+& = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \mathbb{E} \left( r_{t+2} \, | \, S_{t+1} = s' \right) \hspace{1cm} \text{(By Markov Property)} \\
+\end{align*}
+++++
+
 * stem:[\mathbb{E} \left( r_{t+3} \, | \, S_t = s_1 \right)] is given by
 +
 [stem]
 ++++
 \begin{align*}
-& P(S_{t+1} = s_2 \cap  S_{t+2} = s_4 \, | \, S_t = s_1) * \mathcal{R}(s_4) \\
-& + P(S_{t+1} = s_2 \cap  S_{t+2} = s_5 \, | \, S_t = s_1) * \mathcal{R}(s_5) \\
-& +  P(S_{t+1} = s_3 \cap  S_{t+2} = s_6 \, | \, S_t = s_1) * \mathcal{R}(s_6) \\
-& +  P(S_{t+1} = s_3 \cap  S_{t+2} = s_7 \, | \, S_t = s_1) * \mathcal{R}(s_7) = 4.26 \\
+& P(S_{t+2} = s_4 \, | \, S_t = s_1 , S_{t+1} = s_2) \cdot  P(S_{t+1} = s_2 \, | \, S_t = s_1) * \mathcal{R}(s_4) \\
+& + P(S_{t+2} = s_5 \, | \, S_{t+1} = s_2, S_t = s_1) \cdot  P(S_{t+1} = s_2 \, | \, S_t = s_1) * \mathcal{R}(s_5) \\
+& +  P(S_{t+2} = s_6 \, | \, S_t = s_1, S_{t+1} = s_3) \cdot P(S_{t+1} = s_3 \, | \, S_t = s_1)  * \mathcal{R}(s_6) \\
+& +  P(S_{t+2} = s_7 \, | \, S_t = s_1, S_{t+1} = s_3 ) \cdot P(S_{t+1} = s_3 \, | \, S_t = s_1) * \mathcal{R}(s_7) = 4.26 \\
+\end{align*}
+++++
++
+On a side note, the expression can be written as:
++
+[stem]
+++++
+\begin{align*}
+\mathbb{E} \left( r_{t+3} \, | \, S_t = s_1 \right) & = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \sum_{s'' \in \mathcal{S}} P(S_{t+2} = s'' \, | \, S_t = s_1, S_{t+1}=s') \, \mathcal{R}(s'')  \\
+& = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \mathbb{E} \left( r_{t+3} \, | \, S_t = s_1, S_{t+1} = s' \right) \\
+& = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \mathbb{E} \left( r_{t+3} \, | \, S_{t+1} = s' \right) \hspace{1cm} \text{(By Markov Property)} \\
 \end{align*}
 ++++
 
-* Similarly, we can compute stem:[\mathbb{E} \left( r_{t+4} \, | \, S_t = s_1 \right)] which turns out to be 6.
+* Similarly, we can compute stem:[\mathbb{E} \left( r_{t+4} \, | \, S_t = s_1 \right)] which turns out to be 6. And it turns out that
++
+[stem]
+++++
+\begin{align*}
+\mathbb{E} \left( r_{t+4} \, | \, S_t = s_1 \right) & = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \mathbb{E} \left( r_{t+4} \, | \, S_t = s_1, S_{t+1} = s' \right) \\
+& = \sum_{s' \in \mathcal{S}} P(S_{t+1} = s' \, | \, S_t = s_1) \, \mathbb{E} \left( r_{t+4} \, | \, S_{t+1} = s' \right) \hspace{1cm} \text{(By Markov Property)} \\
+\end{align*}
+++++
 
 Therefore, stem:[V(s_1) = -1 + 1.8 + 4.26 + 6 = 11.06].
 
@@ -212,14 +244,14 @@ Proof for the decomposition of value function:
 .Proof for the decomposition of value function
 image::.\images\value_func_decomp.png[align='center', 600, 300]
 
-In the 4th equation, we take the probability of transitioning from stem:[s] to stem:[s'], then assume that we reached state stem:[s'].
+The next state stem:[s_{t+1}] is a random variable here.
 
 Consider example 01:
 
 .Value function computation example
 image::.\images\value_func_01.png[align='center',400, 300]
 
-Now we know that stem:[V(s_1) = \mathbb{E}(r_{t+1} + \gamma V(s') \, | \, S_t = s_1)]. It depends on the value of the future states, i.e., stem:[s_2] or stem:[s_3]. The value of states stem:[s_2] or stem:[s_3] in turn depend on their future states. So, it will be easier to traverse backward.
+Now we know that stem:[V(s_1) = \mathbb{E}(r_{t+1} + \gamma V(s_{t+1}) \, | \, S_t = s_1)]. It depends on the value of the future states, i.e., stem:[s_2] or stem:[s_3]. The value of states stem:[s_2] or stem:[s_3] in turn depend on their future states. So, it will be easier to traverse backward.
 
 * stem:[V(s_8) = 6]
 * stem:[V(s_4) = 8; V(s_5) =9; V(s_6) = 13; V(s_7)=11]
@@ -290,34 +322,8 @@ Which can be written as stem:[\mathbf{V} = \mathbf{R} + \gamma \mathbf{PV}]. Sol
 \mathbf{V} = (\mathbf{I} - \gamma \mathbf{P})^{-1} \mathbf{R}
 ++++
 
-The discount factor should be stem:[\gamma < 1] for the inverse to exist.
+Refer to `mrp_appendix` for how to construct the transition probability matrix and rewards vector when stem:[\gamma=1].
 
 For the snakes and ladders problem, as we know the rewards for all the states and the transition state probabilities, we can now easily compute the value of every state in such a large MRP using the matrix form of the Bellman Equation.
 
 For the reward function that we considered (-1 for non-absorbing states and 0 for the goal state), and with stem:[\gamma=1], the (absolute value of the) value function computed for a particular state provides the expected number of plays to reach the goal state stem:[s_{100}] from that state. We get this interpretation only if we have the reward of -1 for every non-absorbing state.
-
-=== Why stem:[\gamma \ne 1] in Matrix Computation ===
-A (square) matrix stem:[\mathbf{A}] is invertible if and only if its determinant is non-zero, stem:[\text{det}(\mathbf{A}) \ne 0]. The determinant of a matrix is equal to the product of its eigenvalues. Therefore, if any eigenvalue is zero, the determinant will be zero, and the matrix is not invertible.
-
-A (square) matrix stem:[\mathbf{A}] is invertible if and only if none of its eigenvalues are zero. For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, all of its eigenvalues must be non-zero. Now, let's relate the eigenvalues of stem:[(\mathbf{I} - \gamma \mathbf{P})] to the eigenvalues of stem:[\mathbf{P}].
-
-Let stem:[\lambda] be an eigenvalue of the matrix stem:[\mathbf{P}], with a corresponding eigenvector stem:[\mathbf{v}]. By definition, this means stem:[\mathbf{Pv} = \lambda \mathbf{v}]. Now consider the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] and the same eigenvector stem:[\mathbf{v}]:
-
-[stem]
-++++
-\begin{align*}
-(\mathbf{I} - \gamma \mathbf{P}) \mathbf{v} & = \mathbf{I} \mathbf{v} - \gamma \mathbf{P} \mathbf{v} \\
-& = \mathbf{v} - \gamma (\lambda \mathbf{v}) = (1-\gamma \lambda) \mathbf{v} \\
-\end{align*}
-++++
-
-This equation shows that the eigenvalues of the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] are of the form stem:[(1-\gamma \lambda)], where stem:[\lambda] is an eigenvalue of the transition matrix stem:[\mathbf{P}].
-
-The transition probability matrix stem:[\mathbf{P}] is a row-stochastic matrix, meaning each of its rows sums to 1. An important property of stochastic matrices (proven by the Perron-Frobenius theorem) is that their largest eigenvalue is 1.  All other eigenvalues have a magnitude less than or equal to 1. That is, for any eigenvalue stem:[\lambda] of stem:[\mathbf{P}], we have stem:[|\lambda| \leq 1]. So, we know that one of the eigenvalues of stem:[\mathbf{P}] is exactly stem:[\lambda_{max} =1].
-
-For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, all its eigenvalues stem:[(1-\gamma \lambda)] must be non-zero. Let's analyze the eigenvalue of stem:[(\mathbf{I} - \gamma \mathbf{P})] that corresponds to the largest eigenvalue of stem:[\mathbf{P}]. This is the eigenvalue where stem:[\lambda=1]. The corresponding eigenvalue for stem:[(\mathbf{I} - \gamma \mathbf{P})] is stem:[(1-\gamma)].
-
-For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, this eigenvalue must be non-zero: stem:[(1-\gamma) \ne 0 \implies \gamma \ne 1].
-
-Therefore, the condition that stem:[0 \leq \gamma < 1] guarantees that stem:[1-\gamma] is a positive, non-zero number, which in turn ensures that the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] is invertible.
-

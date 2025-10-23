@@ -69,6 +69,8 @@ To evaluate stem:[V^{\pi}], we can estimate any of the above two expectations us
 * If we use the second formula to estimate the expectation, then it is called a Temporal Difference method.
 
 == Monte Carlo Methods ==
+Assume we are working in finite horizon or episodic setting.
+
 * At stem:[t=0], say we are at state stem:[s_0] (a particular state), we take an action prescribed by the policy stem:[\pi], and move to stem:[s_1]. Having taken that action, the environment gives the first reward stem:[r_1].
 
 * At stem:[s_1], we again take an action prescribed by the policy stem:[\pi], and move to stem:[s_2]; we get a reward stem:[r_2]. We realize the rewards as we traverse along the states. We repeat this until we reach the goal state. A single trajectory will be
@@ -88,6 +90,9 @@ NOTE: The rewards come from the environment. In this setting, we just don't know
 First-visit Monte Carlo is an algorithm used for policy evaluation. In this algorithm, we maintain a counter stem:[N(s)] for every state of the MDP which is initialized to 0.
 
 ====
+
+Initialize stem:[S(s) = N(s) = 0] for all stem:[s \in \mathcal{S}].
+
 To evaluate the value of a given state stem:[s] under the policy stem:[\pi], stem:[V^{\pi}(s)], repeat the below steps over several episodes (trajectories) whose starting point doesn't necessarily have to be stem:[s]. In each episode:
 
 . The first time stem:[t] that stem:[S_t=s] (the state at time stem:[t] is stem:[s]) in the episode, do
@@ -138,6 +143,8 @@ The samples (episodes) are i.i.d, that is, stem:[G_t]'s are independent across e
 === Every-visit Monte Carlo Algorithm ===
 
 ====
+Initialize stem:[S(s) = N(s) = 0] for all stem:[s \in \mathcal{S}].
+
 To evaluate stem:[V^{\pi}(s)] for some given state stem:[s], repeat the below steps over several episodes (trajectories) whose starting point doesn't necessarily have to be stem:[s]. In each episode:
 
 . Every time stem:[t] that stem:[S_t=s] (the state at time stem:[t] is stem:[s]) in the episode, do
@@ -170,7 +177,7 @@ We can observe that the estimates from both the algorithms are different. As the
 
 In every-visit MC, not all the stem:[G_t] (in the numerator) are i.i.d. In an episode, we see the state stem:[s] for the second time because of the state-action we took in the previous time steps. So, in an episode, stem:[G_t] from the first visit and stem:[G_t] from the second visit are dependent. Even then this algorithm will eventually converge to stem:[V^{\pi}]. The convergence of every visit MC is less straight forward to see (we cannot just resort to the law of large numbers), but it also converges at a quadratic rate to stem:[V^{\pi}(s)].
 
-Nevertheless, both first visit MC and every visit MC converge to stem:[V^{\pi}] as number of trajectories go to infinity. In first visit MC, this is easy to see as each return sample is independent of the another.
+Nevertheless, both first visit MC and every visit MC converge to stem:[V^{\pi}] for all stem:[s] as number of trajectories go to infinity. In first visit MC, this is easy to see as each return sample is independent of the another.
 
 CAUTION: In both MC methods (and also in TD methods), it is possible that we may leave out computing stem:[V^{\pi}(s)] for some stem:[s \in \mathcal{S}] because the state stem:[s] was never visited by any of the trajectories. But this is not the case in DP methods.
 
@@ -185,7 +192,7 @@ Here we don't take the full back up, that is, we don't look at every possible su
 * Uses experience rather than model
 * No bootstrap: we don't use any previous estimate of stem:[V] to revise the estimate of stem:[V]
 * Needs complete sequences; suitable only for episodic tasks (tasks that end at finite time)
-* Suited for off-line learning
+* Suited for off-line learning: We have to first generate all the trajectories under the given policy. Then, we can evaluate the value of each state.
 * Time required for one estimate doesn't depend on the total number of states, we consider only those states we encounter in the trajectory. Whereas in DP algorithms, we have to compute the value of all the states at stem:[k]th iteration stem:[V_k(s)] before we compute stem:[V_{k+1}(s)].
 * Estimates for each state are independent.
 

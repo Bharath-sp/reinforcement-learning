@@ -7,7 +7,7 @@
 == Policy Evaluation ==
 Is there a way to arrive at stem:[\pi_*] starting from an arbitrary policy stem:[\pi]?
 
-We can start either with any arbitrary policy (deterministic or stochastic). A simple stochastic policy to start off with is at every state stem:[s] we take all the permissible actions with equal probability. We start with a policy stem:[\pi]. Evaluate the given policy stem:[\pi], that is, compute
+We can start with any arbitrary policy (deterministic or stochastic). A simple stochastic policy to start off with is a random uniform policy, that is, at every state stem:[s] we take all the actions with equal probability. We start with a policy stem:[\pi]. Evaluate the given policy stem:[\pi], that is, compute
 
 [stem]
 ++++
@@ -16,7 +16,7 @@ V^{\pi}(s) = \mathbb{E}_{\pi} \left( r_{t+1} + \gamma r_{t+2} + \gamma^2 r_{t+3}
 
 * Solution 1: Solve a system of linear equations using any solver.
 
-* Solution 2: Iterative application of Bellman Evaluation Equation. Iterative update rule:
+* Solution 2: Iterative application of Bellman Evaluation Equation (value iteration algorithm). Iterative update rule:
 +
 [stem]
 ++++
@@ -178,14 +178,14 @@ This can significantly reduce computation. And convergence is guaranteed if all 
 
 *Real Time Dynamic Programming:*
 
-In the value iteration algorithm, we don't have to find the value for every state. It is enough to find the value for only those states that are relevant to the agent. Being at state stem:[s], we take any of the permissible actions. Say we take an action stem:[a], and go to the next state stem:[s']. In this process we get a reward of stem:[r_{t+1}]. Once we have a trajectory from stem:[s], update the value of state stem:[s]
+In the value iteration algorithm, we don't have to find the value for every state. It is enough to find the value for only those states that are relevant to the agent. Being at state stem:[s], we take any of the permissible actions. Say we take an action stem:[a], and go to the next state stem:[s']. In this process we get a reward of stem:[r']. Once we reach stem:[s'], perform the usual value iteration update for state stem:[s]:
 
 [stem]
 ++++
 V(s) \leftarrow \max_a \left[ \sum_{s' \in \mathcal{S} } \mathcal{P}^a_{ss'} \left[ \mathcal{R}^a_{ss'} + \gamma V(s') \right] \right]
 ++++
 
-Then go to all stem:[s'], and repeat the process. This way we update the value of only the relevant states.
+Then go to all stem:[s'], and update the value of stem:[V(s')]. This way we update the value of only the relevant states.
 
 == MDP and RL Setting ==
 

@@ -74,7 +74,7 @@ p(\tau) & = P(s_0) \prod_{t=0}^\infty \pi(a_t \, |\, s_t) \, P(s_{t+1} \, | \, s
 
 Here the transition from stem:[s] to stem:[s'] is dictated by the policy. The transition from stem:[s'] to the next state is also dictated by the policy, and so on. In MRP, the nature took us through states. Here both action + nature (in the case of stochastic environment) take us through states.
 
-Being at state stem:[s], the policy may be stochastic, and it may suggest that we take action A with probability stem:[p] and action B with probability stem:[(1-p)]. After taking one of these actions, the environment tells us the next state. We don't move to the intended state always; stochasticity in the environment plays a role here. Therefore, there are two stochasticities involved here: stochastic policy and stochastic environment.
+Being at state stem:[s], the policy may be stochastic, and it may suggest that we take action A with probability stem:[p] and action B with probability stem:[(1-p)]. After taking one of these actions, the environment tells us the next state. We don't move to the intended state always because the environment can also be stochastic. Therefore, there are two stochasticities involved here: stochastic policy and stochastic environment.
 
 *Example:*
 
@@ -90,6 +90,19 @@ We are interested in evaluating the value of state stem:[A] and stem:[B] under t
 * Value of states under stem:[\pi_b] is stem:[V_{\pi_b}(A) = 5; V_{\pi_b}(B) = 6].
 
 As we can see here, the value of the states depends on the policies, unlike the case in MRPs.
+
+For the value of state A under stem:[\pi_f], we are actually calculating two-step reward:
+
+[stem]
+++++
+\begin{align*}
+V^{\pi_f}(A) & = \mathbb{E}_{\pi} \left( \sum_{k=0}^2 \gamma^k r_{t+k+1} \, | \, S_t = A \right) \\
+& = \mathbb{E} \left( r_{t+1} + \gamma r_{t+2} \, | \, S_t = A \right) \\
+& = \mathbb{E} \left( r_{t+1} \, | \, S_t = A \right) + \gamma \mathbb{E} \left(r_{t+2} \, | \, S_t = A \right) \\
+& = \sum_a \pi(a \, | \, A) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \cdot \mathcal{R}_{ss'}^a + \gamma \left[ \sum_a \pi(a \, | \, A) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \cdot \sum_{a'} \pi(a' \, | \, s') \cdot \sum_{s''} \mathcal{P}^{a}_{s's''} \cdot \mathcal{R}_{s's''}^{a'} \right] \\
+& = \mathcal{R}_{AB}^{a_1} + \mathcal{R}_{BG_2}^{a_1} = 1 + 10 = 11
+\end{align*}
+++++
 
 == Decomposition of State Value Function ==
 
@@ -171,7 +184,12 @@ Denote
 \end{align*}
 ++++
 
-* stem:[\mathcal{P}^{\pi}(s' \, | \, s)] represents the probability of getting to stem:[s'] from stem:[s] under the policy stem:[\pi]. This is just a specialized transition probability matrix which is driven by policy stem:[\pi]. We get a different transition probability matrix for each given policy stem:[\pi].
+* stem:[\mathcal{P}^{\pi}(s' \, | \, s)] represents the probability of getting to stem:[s'] from stem:[s] under the policy stem:[\pi]. This is just a specialized transition probability matrix which is driven by policy stem:[\pi]. At state stem:[s], if the policy is stochastic, the policy can suggest more than one action. In such case, we need to define a transition probability matrix stem:[\mathcal{P}^{a}_{ss'}] for each action stem:[a]. Say there are two actions stem:[a_1] and stem:[a_2] suggested by the policy at stem:[s]. Then
++
+[stem]
+++++
+\mathcal{P}^{\pi}(s' \, | \, s) = \pi(a_1 \, | \, s) \mathcal{P}^{a_1}_{ss'} + \pi(a_2 \, | \, s) \mathcal{P}^{a_2}_{ss'}
+++++
 
 * stem:[\mathcal{R}^{\pi}(s)] represents the average reward that we get in state stem:[s] under the policy stem:[\pi].
 
@@ -205,7 +223,7 @@ We know stem:[\mathcal{R}_{ss'}^a] (as it is given) and the transition probabili
 
 [stem]
 ++++
-\mathcal{P}^{\pi} = \mathcal{P}^{a} = \begin{bmatrix}
+\mathcal{P}^{\pi} = \mathcal{P}^{a_1} = \begin{bmatrix}
  & A & B & C & D \\
 A & 0 & 0.9 & 0.1 & 0 \\
 B & 0.1 & 0 & 0 & 0.9 \\
@@ -214,11 +232,11 @@ D & 0 & 0 & 0 & 1
 \end{bmatrix} 
 ++++
 
-As the policy is deterministic, stem:[\pi(a \, | \, s) =1], and assuming stem:[\gamma=1], the value function is given by
+As the policy is deterministic, stem:[\pi(a_1 \, | \, s) =1], and assuming stem:[\gamma=1], the value function is given by
 
 [stem]
 ++++
-V^{\pi}(s) = \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + V^{\pi}(s') \right)
+V^{\pi}(s) = \sum_{s'} \mathcal{P}^{a_1}_{ss'} \left( \mathcal{R}_{ss'}^{a_1} + V^{\pi}(s') \right)
 ++++
 
 The value of the states under stem:[\pi_1] is
@@ -239,7 +257,7 @@ Similarly, consider a deterministic policy stem:[\pi_2] that chooses action stem
 
 [stem]
 ++++
-\mathcal{P}^{\pi} = \mathcal{P}^{a} = \begin{bmatrix}
+\mathcal{P}^{\pi} = \mathcal{P}^{a_2} = \begin{bmatrix}
  & A & B & C & D \\
 A & 0 & 0.1 & 0.9 & 0 \\
 B & 0.9 & 0 & 0 & 0.1 \\

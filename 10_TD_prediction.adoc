@@ -73,7 +73,7 @@ V^{\pi}(s) = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S
 
 Approximate the expectation by a sample mean:
 
-At time stem:[t], suppose we are in state stem:[s_t]. We take an action stem:[a_t] as per the policy stem:[\pi], get a reward of stem:[r_{t+1}], and move to next state stem:[s_{t+1}]. As soon as we see this transition stem:[(s_t, r_{t+1}, s_{t+1})], we can make an update to stem:[V(s_t)].
+At time stem:[t], suppose we are in state stem:[s_t]. We take an action stem:[a_t] as per the policy stem:[\pi], get a reward of stem:[r_{t+1}], and move to next state stem:[s_{t+1}]. As soon as we see this transition stem:[(s_t, a_t, r_{t+1}, s_{t+1})], we can make an update to stem:[V(s_t)].
 
 [stem]
 ++++
@@ -87,7 +87,7 @@ To make an update to stem:[V(s_t)], we don't have to wait for the episode to get
 Samples (a sample is a realization of stem:[r_{t+1} + \gamma V(s_{t+1})]) come from different visits to the state stem:[s], either from the same or different trajectories. Here we are moving one step ahead in time to generate a sample, whereas in MC algorithms, we have to move till the end of the episode to realize a sample.
 
 === TD vs MC Example ===
-Consider the below MDP (or MRP) with six states. stem:[S_6] is the terminal state. And suppose we are given five sample trajectories:
+Consider the below MRP with six states. stem:[S_6] is the terminal state. And suppose we are given five sample trajectories:
 
 .TD vs MC Example
 image::.\images\one_step_td_eg.png[align='center', 700, 400]
@@ -98,6 +98,8 @@ From stem:[S_3], we go to stem:[S_4] with 0.9 probability or to stem:[S_5] with 
 
 * stem:[V(S_6) = 0; V(S_5)= +10; V(S_4) = +1]
 * stem:[V(S_3) = 0.9 (0 + V(S_4)) + 0.1 (0 + V(S_5)) = 0.9 * V(S_4) + 0.1 * V(S_5) = 0.9 + 1 = 1.9] and stem:[V(S_1) = 2.9; V(S_2) = 3.9]
+
+This is the substitution method. We can also use the matrix inversion method. See `rl_assignment_01.ipynb` in Google Colab.
 
 Assume we do not know the transition probability matrix and rewards for all state-action transition. We have to collect samples to estimate the value of states; we cannot just enumerate all the possible paths.
 
@@ -180,7 +182,7 @@ TD(0) algorithm:
 * Uses experience (samples) without model like MC.
 * Bootstraps like DP: Uses an old estimate of stem:[V(s')] to get a new estimate of stem:[V(s)].
 * TD method can work with partial sequences. Unlike MC methods, it doesn't need complete sequences.
-* Suited for online learning. As soon as we go from stem:[s] to stem:[s'], we can make an update to stem:[V(s)]. This is referred to as *online learning*. In MC algorithms, we should traverse the whole trajectory (wait for the whole trajectory to end) to make an update to stem:[V(s)]. This is known as *offline learning*. MC is more suited when there are trajectories readily available. Thus, MCs are suitable for offline learning.
+* Suited for online learning. As soon as we go from stem:[s] to stem:[s'], we can make an update to stem:[V(s)]. This is referred to as *online learning*. In MC algorithms, we should traverse the whole trajectory (wait for the whole trajectory to end), and collect the samples first before making any update to stem:[V(s)]. So, this is known as *offline learning*. MC is more suited when there are trajectories readily available.
 
 *Connection between MC error and TD error:*
 

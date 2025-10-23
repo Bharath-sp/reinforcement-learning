@@ -16,6 +16,8 @@ Suppose we have stem:[K] trajectories and stem:[L_k] time steps in each trajecto
 \hat{\mathcal{P}}(s' \, | \, s,a) = \frac{1}{N(s,a)} \sum_{k=1}^K \sum_{t=1}^{L_k -1} \mathbb{I}(s_{k,t}=s, a_{k,t}=a, s_{k,t+1}=s')
 ++++
 
+We should calculate this for all stem:[s' \in \mathcal{S}] given each stem:[(s,a)].
+
 Here stem:[N(s,a)] represents the number of times we have taken the action stem:[a] at state stem:[s]. The indicator function is 1 for those instances where we have taken the action stem:[a] at state stem:[s] and transitioned to stem:[s']. Therefore, this gives the empirical probability of transitioning to stem:[s'] by taking action stem:[a] at stem:[s]. Similarly, we can compute the MLE of the reward function
 
 [stem]
@@ -75,16 +77,16 @@ Let's denote this as the importance sampling estimator stem:[\hat{\mu}_q = \frac
 
 If the likelihood ratio stem:[\frac{p(\mathbf{x})}{q(\mathbf{x})}] is large, the variance of the estimator explodes. The ratio will be high when stem:[p(\mathbf{x}) \approx 0.9] and stem:[q(\mathbf{x}) \approx 0.01] for the sample stem:[\mathbf{x}].
 
-Policies are just probability distributions. So
+Policies are just probability distributions. We are at stem:[s], and we want to estimate stem:[V^{\pi}(s)]. In the usual TD method, we generate samples stem:[(s_t, a_t, s_{t+1}, r_{t+1})] using the policy stem:[\pi] to do it. That is, the action will be taken as per the policy stem:[\pi]. But we now have many such samples stem:[(s_t, a_t, s_{t+1}, r_{t+1})] generated using a behavior policy stem:[\mu]. We want to use these samples to estimate stem:[V^{\pi}(s)].
 
 [stem]
 ++++
 \begin{align*}
 V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma V^{\pi}(s_{t+1}) \, | \, S_t = s \right] \\
 
-& = \sum_a \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}(s') \right) \\
+& = \sum_{a \in \mathcal{A}} \pi(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}(s') \right) \\
 
-& = \sum_a \frac{\pi(a \, | \, s)}{\mu(a \, | \, s)} \cdot \mu(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}(s') \right) \\
+& = \sum_{a \in \mathcal{A}} \frac{\pi(a \, | \, s)}{\mu(a \, | \, s)} \cdot \mu(a \, | \, s) \cdot \sum_{s'} \mathcal{P}^{a}_{ss'} \left( \mathcal{R}_{ss'}^a + \gamma V^{\pi}(s') \right) \\
 
 & = \mathbb{E}_{\mu} \left[ \frac{\pi(a \, | \, s)}{\mu(a \, | \, s)} \left( r_{t+1} + \gamma V^{\pi}(s_{t+1}) \right) \, | \, S_t = s \right], \,\, a \sim \mu(\cdot \, | \, s) \\
 

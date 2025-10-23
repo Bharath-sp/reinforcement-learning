@@ -5,7 +5,7 @@
 :toc:
 
 == Multi-Step Return ==
-In the beginning of training phase, MC algorithms have low bias, and high variance. One-step TD algorithms have high bias and low variance. We want to come up with an algorithm that has better bias variance trade-off. We choose a model that is between TD(0) and MC.
+In the beginning of training phase, MC algorithms have low bias, and high variance. One-step TD algorithms have high bias and low variance. We want to come up with an algorithm that has better bias-variance trade off. We choose a model that is between TD(0) and MC.
 
 In one-step TD, we go one step ahead in time; we consider the immediate reward stem:[r_{t+1}] and the old estimate stem:[V(s_{t+1})] to make an update to stem:[V(s)]. But we can also go multi steps ahead in time.
 
@@ -25,7 +25,7 @@ Here the target is stem:[r_{t+1} + \gamma V(s_{t+1})]. In the two-step TD:
 [stem]
 ++++
 \begin{align*}
-V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma r_{t+2} + \gamma^2 V^{\pi}(s_{t+1}) \, | \, S_t = s \right] \\
+V^{\pi}(s) & = \mathbb{E}_{\pi} \left[ r_{t+1} + \gamma r_{t+2} + \gamma^2 V^{\pi}(s_{t+2}) \, | \, S_t = s \right] \\
 
 V(s_t) & \leftarrow V(s_t) + \alpha_t \left[ r_{t+1} + \gamma r_{t+2} + \gamma^2 V(s_{t+2}) - V(s_t) \right] \\
 \end{align*}
@@ -87,7 +87,7 @@ As  stem:[\lambda \to 1], all the weights will be on large stem:[G_t^{(n)}]. In 
 +
 stem:[\lambda=0]: This gives stem:[G_t^{\lambda} = G_t^{(1)}], which is just the 1-step TD (also known as TD(0)) target.
 
-*For a finite horizon setting (episodic tasks):*
+*For finite horizon settings (or episodic tasks):*
 
 Suppose the episode ends at time stem:[T]. Then the maximum number of steps after stem:[t] is stem:[N=T-t]. So, only stem:[n=1,2,\dots, N] are valid. In this case, the stem:[N-] step return stem:[G_t^{(N)}] is the Monte Carlo return stem:[G_t]. Moreover, for all stem:[n > N] the stem:[n-] step return equals the full return
 
@@ -106,7 +106,9 @@ With stem:[G_t^{(n)}] target, we have to move stem:[n] steps ahead in time to ma
 [stem]
 ++++
 \begin{align*}
-G_t^{\lambda} - V(s_t) & = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \left[ G_t^{(n)} - V(s_t) \right] \\
+G_t^{\lambda} - V(s_t) & = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} G_t^{(n)} - 1 * V(s_t) \\
+& = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} G_t^{(n)} - \sum_{n=1}^\infty (1-\lambda) \lambda^{n-1} V(s_t) \\
+& = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \left[ G_t^{(n)} - V(s_t) \right] \\
 & = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \delta_t^{(n)}
 \end{align*}
 ++++
@@ -153,7 +155,7 @@ G_t^{\lambda} - V(s_t)
 
 & = \sum_{i=0}^\infty (\lambda \gamma)^i \delta_{t+i}^{(1)} \\
 
-& = \delta_t^{(1)} + (\lambda \gamma) \delta_{t+1}^{(1)} + + (\lambda \gamma)^2 \delta_{t+2}^{(1)} + (\lambda \gamma)^3 \delta_{t+3}^{(1)} + \dots
+& = \delta_t^{(1)} + (\lambda \gamma) \delta_{t+1}^{(1)} + (\lambda \gamma)^2 \delta_{t+2}^{(1)} + (\lambda \gamma)^3 \delta_{t+3}^{(1)} + \dots
 
 \end{align*}
 ++++

@@ -1,0 +1,83 @@
+= Markov Rewards Process - Appendix =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Problem ==
+For a given MRP, we know that the value of a state is given by the Bellman equation as follows:
+
+[stem]
+++++
+\begin{align*}
+V(s) & = \mathbb{E} \left( r_{t+1} + \gamma V(s_{t+1}) \, | \, S_t = s \right) \\
+& = \mathbb{E} \left( r_{t+1} \, | \, S_t = s \right) + \gamma \mathbb{E} \left( V(s_{t+1}) \, | \, S_t = s \right) \\
+& = \mathbb{E} \left( r_{t+1} \, | \, S_t = s \right) + \gamma \sum_{s' \in \mathcal{S}} \mathcal{P}_{ss'} V(s') 
+\end{align*}
+++++
+
+We have to be careful with calculating the value for the absorbing states (or terminal states). For such states
+
+[stem]
+++++
+\begin{align*}
+V(s) & = \mathbb{E} \left( r_{t+1} \, | \, S_t = s \right) + \gamma V(s) \\
+(1-\gamma) V(s) & = \mathbb{E} \left( r_{t+1} \, | \, S_t = s \right) \\
+V(s) & = \frac{\mathbb{E} \left( r_{t+1} \, | \, S_t = s \right)}{1-\gamma} = \frac{r_{\text{abs}}}{1-\gamma}
+\end{align*}
+++++
+
+
+* If the MRP is an infinite horizon MRP, that is, continuing absorbing state or infinite staying with per-step reward, the trajectory continues infinitely stem:[\{\dots, s, s, s, \dots\}]. The same constant reward stem:[r_{\text{abs}}] is given for each transition to the state stem:[s] or for each stay in stem:[s].
++
+[stem]
+++++
+V(s) = r_{\text{abs}} + \gamma r_{\text{abs}} + \gamma^2 r_{\text{abs}} + \dots = \frac{r_{\text{abs}}}{1-\gamma}
+++++
++
+This is a geometric series with stem:[\gamma < 1], so it converges to stem:[\frac{r_{\text{abs}}}{1-\gamma}].
+
+* If the MRP is a finite horizon or episodic MRP, the trajectory ends on entering the state stem:[s]. With stem:[\gamma=1], we cannot use the above Bellman formula to solve stem:[V(s)] in such cases. And we get matrix inversion error when we try to solve for all the states using the matrix-inversion method. To solve this, we have to set stem:[V(s) = 0] (or some constant) for the terminal state stem:[s].
+
+** If we design reward on the transition, then stem:[V(s) = 0] as the reward on the transition into the absorbing/terminal state is stored at the predecessor state. And there is no future reward to be collected after entering the terminal state.
+** If we design reward for being in the state, then we assign stem:[V(s) = r_{\text{abs}}].
+
+====
+*Solution:*
+
+As the value of the terminal state is identified, remove the row and column corresponding to this state from the transition probability matrix. Note that by doing this we may end up with some rows not summing to 1. And remove the rewards for this state from the rewards vector. With this modified stem:[\mathbf{P}] and stem:[\mathcal{R}], we can now use the Bellman equation (matrix method as well) with stem:[\gamma=1] to solve for the remaining states.
+====
+
+=== Background: Why stem:[\gamma = 1] gives Inversion Error ===
+A (square) matrix stem:[\mathbf{A}] is invertible if and only if its determinant is non-zero, stem:[\text{det}(\mathbf{A}) \ne 0]. The determinant of a matrix is equal to the product of its eigenvalues. Therefore, if any eigenvalue is zero, the determinant will be zero, and the matrix is not invertible.
+
+A (square) matrix stem:[\mathbf{A}] is invertible if and only if none of its eigenvalues are zero. For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, all of its eigenvalues must be non-zero. Now, let's relate the eigenvalues of stem:[(\mathbf{I} - \gamma \mathbf{P})] to the eigenvalues of stem:[\mathbf{P}].
+
+Let stem:[\lambda] be an eigenvalue of the matrix stem:[\mathbf{P}], with a corresponding eigenvector stem:[\mathbf{v}]. By definition, this means stem:[\mathbf{Pv} = \lambda \mathbf{v}]. Now consider the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] and the same eigenvector stem:[\mathbf{v}]:
+
+[stem]
+++++
+\begin{align*}
+(\mathbf{I} - \gamma \mathbf{P}) \mathbf{v} & = \mathbf{I} \mathbf{v} - \gamma \mathbf{P} \mathbf{v} \\
+& = \mathbf{v} - \gamma (\lambda \mathbf{v}) = (1-\gamma \lambda) \mathbf{v} \\
+\end{align*}
+++++
+
+This equation shows that the eigenvalues of the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] are of the form stem:[(1-\gamma \lambda)], where stem:[\lambda] is an eigenvalue of the transition matrix stem:[\mathbf{P}].
+
+The transition probability matrix stem:[\mathbf{P}] is a row-stochastic matrix, meaning each of its rows sums to 1. An important property of stochastic matrices (proven by the Perron-Frobenius theorem) is that their largest eigenvalue is 1.  All other eigenvalues have a magnitude less than or equal to 1. That is, for any eigenvalue stem:[\lambda] of stem:[\mathbf{P}], we have stem:[|\lambda| \leq 1]. So, we know that one of the eigenvalues of stem:[\mathbf{P}] is exactly stem:[\lambda_{max} =1].
+
+For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, all its eigenvalues stem:[(1-\gamma \lambda)] must be non-zero. Let's analyze the eigenvalue of stem:[(\mathbf{I} - \gamma \mathbf{P})] that corresponds to the largest eigenvalue of stem:[\mathbf{P}]. This is the eigenvalue where stem:[\lambda=1]. The corresponding eigenvalue for stem:[(\mathbf{I} - \gamma \mathbf{P})] is stem:[(1-\gamma)].
+
+For the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] to be invertible, this eigenvalue must be non-zero: stem:[(1-\gamma) \ne 0 \implies \gamma \ne 1].
+
+Therefore, the condition that stem:[0 \leq \gamma < 1] guarantees that stem:[1-\gamma] is a positive, non-zero number, which in turn ensures that the matrix stem:[(\mathbf{I} - \gamma \mathbf{P})] is invertible.
+
+Or to put simply, when there is 1 in any of the diagonal entries in stem:[\mathbf{P}] matrix, then stem:[(\mathbf{I} - \mathbf{P})] has a row with full of zeroes. Thus, the matrix becomes non-invertible.
+
+== Value of the Terminal State ==
+Given an MRP with 5 states. The reward associated with the terminal state is 10. Then, what will be the value of this terminal state?
+
+image::.\images\terminal_value_01.png[align='left']
+image::.\images\terminal_value_02.png[align='left']
+image::.\images\terminal_value_03.png[align='left']
