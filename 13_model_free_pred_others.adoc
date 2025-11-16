@@ -40,6 +40,8 @@ If we were able to do this, the possible benefits are:
 
 If we learn about a policy (stem:[V^{\pi}] or stem:[Q^{\pi}]) using samples generated from the same policy stem:[\pi], then it is called *on-policy* learning. If we learn about a policy (stem:[V^{\pi}] or stem:[Q^{\pi}]) using samples generated from some other policy stem:[\mu], then it is called *off-policy* learning.
 
+This decouples the data collection process from the policy training process, allowing the agent to learn from a wide range of experiences, including past data or data from other agents. In summary, off-policy learning is like reading a cookbook and learning the optimal recipes without having to personally try every single potential (and possibly bad) action in the real kitchen first.
+
 == Importance Sampling ==
 Let stem:[p(\mathbf{x})] be the target distribution and stem:[q(\mathbf{x})] be the behavior distribution for some random variable stem:[\mathbf{x}]. Suppose we need to find the expectation of stem:[f(\mathbf{x})] when stem:[\mathbf{x}] is sampled from stem:[p].
 

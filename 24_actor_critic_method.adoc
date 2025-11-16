@@ -1,0 +1,246 @@
+= Actor Critic Methods =
+:doctype: book
+:stem: latexmath
+:eqnums:
+:toc:
+
+== Introduction ==
+The gradient of the objective function stem:[J(\theta)] is given by:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  \Psi_t \right] 
+++++
+
+Different policy gradient formulations are as below. These three come from the three variance reduction techniques we saw:
+
+. stem:[\Psi_t = \sum_{k=0}^\infty \gamma^k r_{k+1} = G_0]: Total reward of the trajectory.
+. stem:[\Psi_t = \sum_{t'=t}^\infty \gamma^{t'-t} r_{t'+1} = G_{t:\infty}]: Total reward following action stem:[a_t].
+. stem:[\Psi_t = A_t = \sum_{t'=t}^\infty \gamma^{t'-t} r_{t'+1} - b(s_{t'}) = G_{t:\infty} - b(s_t)]: Baseline version of the previous formula.
+
+Each of them is unbiased, but they differ in variance. The vanilla policy gradient algorithm is MC based, it is not an online algorithm. We make it online using the actor-critic methods. And the actor-critic methods also have a role in variance reduction.
+
+== Actor-Critic Formulation ==
+The policy gradient estimate is the starting point of actor-critic algorithms. The policy gradient estimate with temporal structure (by taking causality into account) is given by:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] 
+++++
+
+The sample estimate is given by:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) \approx \frac{1}{K} \sum_{i=1}^K  \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t^{(i)} \, | \, s_t^{(i)}) \cdot  \left[ \sum_{t'=t}^\infty \gamma^{t'-t} r^{(i)}_{t'+1} \right] \right]
+++++
+
+We have rolled out stem:[K] trajectories using the current policy stem:[\pi_{\theta}]. At each time step stem:[t], we are calculating stem:[G_{t:\infty}(\tau) = \sum_{t'=t}^\infty \gamma^{t'-t} r^{(i)}_{t'+1}], which is the sum of discounted rewards from state stem:[s_t] and having taken action stem:[a_t] at it. This is nothing but a single trajectory estimate of stem:[Q^{\pi_{\theta}}(s_t, a_t)]. This quantity is called as "*Critic*" because it gives an estimate of how 'good' the action stem:[a_t] was in state stem:[s_t].
+
+The policy network stem:[\pi_{\theta}] is named as "*actor*" as it suggests what action to take in a given state stem:[s_t]. We can frame algorithms in such a way that the critic tries to critic correctly, and the actor tries to select actions optimally for a given state.
+
+CAUTION: At the start of the training, the initial stem:[Q^{\pi_{\theta}}(s_t, a_t)] (critic) will also be a random number. As training progresses, it improves.
+
+== Stochastic Policy Gradient Theorem ==
+For a suitable objective function stem:[J(\theta)] by taking the principle of causality into account, the gradient is:
+
+[stem]
+++++
+\begin{align*}
+\nabla_{\theta} J(\theta) & = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  G_{t:\infty}(\tau) \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ G_{t:\infty}(\tau) \, | \, s_t, a_t \right] \biggr\}  \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  Q^{\pi_{\theta}}(s_t, a_t) \biggr\}  \right] \\
+
+\end{align*}
+++++
+
+* Step 2: This comes from the tower property of conditional expectation. We replaced the single path reward by stem:[Q^{\pi_{\theta}}(s_t, a_t)]. Mathematically, it means, instead of considering a single trajectory from stem:[(s_t, a_t)] and taking an estimate of stem:[Q], we roll out several such trajectories (green curves) and compute the average stem:[Q].
++
+image::.\images\causality_02.png[align='center', 200, 200]
+
+* Step 3: stem:[\pi_{\theta}(a_t \, | \, s_t)] is the actor and stem:[Q^{\pi_{\theta}}(s_t, a_t)] is the critic.
+
+We derived this policy gradient expression by considering the "start-state" objective. But this expression (or form) holds for average reward objective and average value objective functions as well.
+
+== Policy Gradient with Baseline ==
+With baseline, the policy gradient estimate is:
+
+[stem]
+++++
+\begin{align*}
+\nabla_{\theta} J(\theta) & = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  (G_{t:\infty} - b(s_t)) \biggr\} \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  ( \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ G_{t:\infty}(\tau) \, | \, s_t, a_t \right] - \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ G_{t:\infty}(\tau) \, | \, s_t \right]) \biggr\}  \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  ( Q^{\pi_{\theta}}(s_t, a_t) - V^{\pi_{\theta}}(s_t)) \biggr\}  \right] \\
+
+& = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  A^{\pi_{\theta}}(s_t, a_t)  \biggr\}  \right] \\
+
+\end{align*}
+++++
+
+where stem:[A^{\pi_{\theta}}(s, a) := Q^{\pi_{\theta}}(s, a) - V^{\pi_{\theta}}(s)] is the advantage function. Here stem:[a] is an observed action which comes from the observed trajectory under policy stem:[\pi_{\theta}]. The advantage function measures how good the action stem:[a] is at stem:[s] compared to the average action suggested by the policy stem:[\pi_{\theta}]. Note that we are working with stochastic policies here.
+
+How can we estimate the advantage function using samples?
+
+We can try having a function approximator stem:[V_{\phi}] for stem:[V^{\pi_{\theta}}]. Note stem:[\phi] is the parameter for the stem:[V] network. If we know the true stem:[V^{\pi_{\theta}}], then the one-step TD error for stem:[V^{\pi_{\theta}}] is
+
+[stem]
+++++
+\delta_t^{\pi_{\theta}} = r_{t+1} + \gamma V^{\pi_{\theta}}(s_{t+1}) - V^{\pi_{\theta}}(s_t)
+++++
+
+At time stem:[t], suppose we are in state stem:[s_t]. We take an action stem:[a_t] as per the policy stem:[\pi_{\theta}], get a reward of stem:[r_{t+1}], and move to next state stem:[s_{t+1}]. To compute stem:[V^{\pi_{\theta}}(s_t)], we consider all actions and take expected rewards at each time step starting from stem:[s_t].
+
+CAUTION: At stem:[s_t], we use the specific action stem:[a_t] to compute stem:[Q], but we average across all actions to compute stem:[V].
+
+On taking expectation of the one-step TD error, we get:
+
+[stem]
+++++
+\begin{align*}
+\mathbb{E}_{\pi_{\theta}}[\delta_t^{\pi_{\theta}} \, | \, s_t, a_t] & = \mathbb{E}_{\pi_{\theta}} \left[ r_{t+1} + \gamma V^{\pi_{\theta}}(s_{t+1})  \, | \, s_t, a_t \right] - \mathbb{E}_{\pi_{\theta}}[V^{\pi_{\theta}}(s_t) \, | \, s_t, a_t] \\
+& =  Q^{\pi_{\theta}}(s_t, a_t) - V^{\pi_{\theta}}(s_t) \\
+& =  A^{\pi_{\theta}}(s_t, a_t)
+\end{align*}
+++++
+
+* The first term is the definition of the action-value function.
+* The second term is a constant with respect to this conditional expectation. For a given stem:[s_t], it considers all actions at each time step and gives the expected total discounted rewards (which is a scalar value). It doesn't take stem:[a_t] as an argument, that is, the value function remains the same for all actions given a state stem:[s_t].
+
+So, the one-step TD error is an unbiased estimate of the advantage function (only if we know the true stem:[V^{\pi_{\theta}}]):
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \biggl\{ \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  \delta_t^{\pi_{\theta}}  \biggr\}  \right]
+++++
+
+The one-step TD error can be computed as soon as we get the quadruple stem:[(s_t, a_t, r_{t+1}, s_{t+1})], i.e., it can be computed in online fashion. Therefore, for each time step stem:[t], we can calculate stem:[\nabla_{\theta} J(\theta)], and update the parameters stem:[\theta]. This provides us the flexibility to do online learning with Policy gradient methods.
+
+In practice, we don't know the true stem:[V^{\pi_{\theta}}], we use the function approximator stem:[V_{\phi}] for stem:[V^{\pi_{\theta}}]. So, we use the approximate TD error as an estimate of the advantage function:
+
+[stem]
+++++
+A^{\pi_{\theta}}(s_t, a_t) \approx r_{t+1} + \gamma V_{\phi}(s_{t+1}) - V_{\phi}(s_t)
+++++
+
+Since we are using a function approximator instead of stem:[V^{\pi_{\theta}}], this approximate one-step TD error can be a biased estimate of the advantage function. If we fit stem:[V_{\phi}] using Fitted V iteration, the approximator stem:[V_{\phi}] is biased because of bootstrapping to update the stem:[V] values (using the old value of stem:[V] to get a new value). Therefore, the one-step TD error using this approximator will also be biased. But this is okay; if things are done properly, this bias will be  eventually reduced.
+
+== Actor Critic Algorithms ==
+
+*Batch Actor Critic Algorithm:*
+
+Here the V network is the critic which is initialized by stem:[\phi].
+
+image::.\images\batch_ac_algo.png[align='left', 600, 400]
+
+* Step 3: In each iteration, transitions are generated under the updated policy stem:[\pi_{\theta}]. That is, we sample stem:[K] states, and take action suggested by stem:[\pi_{\theta}] in those states to get stem:[r_{t+1}] and stem:[s_{t+1}].
+* Step 4: The V function can be fitted using TD based fitted V iteration algorithm.
+
+Here we are sampling a batch of stem:[K] transitions; we are not passing through a trajectory. So, it is not an online algorithm, but better than MC based policy gradient (REINFORCE and Vanilla policy gradient) algorithms. In MC based methods, we had to roll out whole trajectories.
+
+This is called "batch" because we are updating stem:[\theta] for every batch of stem:[K] transitions.
+
+*Online Actor Critic Algorithm:*
+
+We can have the number of transitions stem:[K=1] to do this online.
+
+image::.\images\online_ac_algo.png[align='left', 700, 400]
+
+* Step 5: We fit the model with a single transition. So, the estimated parameters will have high variance.
+* Step 7: The gradient estimate will also have high variance as we are using a single sample.
+* Step 4: In the subsequent iterations, the transition stem:[(s',a',r',s'')] will not be an independent sample. This sample will be correlated with the previous sample, so fitting stem:[V] will be problematic.
+* Step 5: For every iteration, we obtain the target from an updated stem:[V] network. The moving target problem is severe. In the batch AC algorithm, the targets are obtained from the same network at least for stem:[K] transitions.
+
+== Advantage Actor Critic Algorithm ==
+Step 5 and 7 works best with a batch (parallel workers). We construct a parallel actor-critic algorithm, say with 4 to 6 worker threads. Each of these threads will simulate a different and trajectory. All threads starting at the same start state stem:[s] will still generate different (and independent) stem:[(s,a,r,s')] as the policy and environment can be stochastic. Because of the four threads, at each step, we get 4 transitions. This is then similar to stem:[K=4] in the batch actor-critic algorithm; sampling stem:[K] transitions except that we are starting from the start state. And it is an online algorithm.
+
+image::.\images\a2c_parallelization.png[align='center', 600, 400]
+
+Once we have these stem:[K] independent transitions, we fit stem:[V_{\phi}], calculate the advantage, and then update stem:[\theta] (same as steps 5, 6 and 7 in the batch actor-critic algorithm). Then the process repeats. This way we mitigated the problems of online actor critic algorithm and also preserved the online learning capability. Here all the threads are synchronized because we wait for all the threads to finish a time step, get a quadruple, fit stem:[V_{\phi}], calculate the advantage to make an update to stem:[\theta]. This version of the algorithm is known as A2C algorithm.
+
+There is also an asynchronous version of this where we don't wait for the threads to complete the step. There is a common stem:[\theta]; each thread will take the current stem:[\theta] and update it as soon as they complete a time step. This version of the algorithm is known as A3C (Asynchronous Advantage Actor Critic) algorithm.
+
+NOTE: There is no theoretical proof why these algorithms work (especially A3C). It just works in practice. The A2C and A3C algorithms are online algorithms.
+
+*Applicability of A3C Algorithm:*
+
+The A3C (with its synchronous version) requires multiple worker threads to simulate samples for gradient computation. So, this algorithm *is useful only* when simulators are available; instantiate multiple copies of simulator. In many real applications, this can be an expensive step
+
+* Navigation of physical robots (require many physical robots)
+* Self-driving car (requires samples generated from multiple cars)
+
+== Towards stem:[n-] step Returns ==
+
+* In Online Actor Critic Algorithm, we had one-step TD error based Advantage estimate:
++
+[stem]
+++++
+A^{\pi_{\theta}} (s_t,a_t) \approx r_{t+1} + \gamma V_{\phi}(s_{t+1}) - V_{\phi}(s_t)
+++++
++
+This has low variance. But biased due to the use of function approximators
+
+* Monte Carlo based Advantage estimate will be:
++
+[stem]
+++++
+A^{\pi_{\theta}} (s_t,a_t) = \sum_{t'=t}^\infty \gamma^{t'-t} r_{t'+1} - b(s_{t'})
+++++
++
+This has no bias, but high variance.
+
+. We considered the critic who provides one-step TD error as feedback to the actor:
++
+[stem]
+++++
+\delta_t^{(1)} = r_{t+1} + \gamma V_{\phi}(s_{t+1}) - V_{\phi}(s_t)
+++++
+
+. We could also consider a critic that provides n-step TD error as feedback to the actor:
++
+[stem]
+++++
+\delta_t^{(n)} = r_{t+1} + \gamma r_{t+2} + \dots + \gamma^{n-1} r_{t+n} + \gamma^n V_{\phi}(s_{t+n}) - V_{\phi}(s_t)
+++++
++
+stem:[\delta_t^{(n)}] is also an unbiased estimate of stem:[A^{\pi_\theta}] if stem:[V_{\phi} = V^{\pi_\theta}]. This gives rise to a method called Generalized Advantage Estimation (GAE).
++
+[stem]
+++++
+A^{\pi_{\theta}} (s_t,a_t) \approx \sum_{t'=t}^{t+n-1} \gamma^{t'-t} r_{t'+1} + \gamma^n V_{\phi}(s_{t+n}) - V_{\phi}(s_t)
+++++
++
+This advantage function helps us reduce the variance of the gradient estimate, stem:[\nabla_{\theta} J(\theta)].
++
+image::.\images\variance_reduction_pg.png[align='center', 300, 200]
++
+In addition, we can also use stem:[n-] step return as the *target* for the critic formulation. In the A3C paper (Asynchronous methods for deep Asynchronous methods for deep reinforcement learning (2016)), stem:[n=4] is used. Note stem:[n-] step return is the same as the stem:[n]-step TD error but except the last term (stem:[- V_{\phi}(s_t)]).
+
+. We could also consider the TD(stem:[\lambda]) error given by
++
+[stem]
+++++
+\delta_t^{(\lambda)} = (1-\lambda) \sum_{n=1}^\infty \lambda^{n-1} \delta_t^{(n)}
+++++
++
+This will also be an unbiased estimate of the advantage if stem:[V_{\phi} = V^{\pi_\theta}]. This advantage function also helps us reduce the variance of the gradient estimate. In addition, we can also use stem:[\lambda] return as the target for the critic formulation. Both critic and feedback updates can be implemented using eligibility traces.
+
+== Different Policy Gradient Formulations ==
+The gradient of the objective function (or performance measure) stem:[J(\theta)] is given by:
+
+[stem]
+++++
+\nabla_{\theta} J(\theta) = \mathbb{E}_{\tau \sim \pi_{\theta}} \left[ \sum_{t=0}^\infty \nabla_{\theta} \log \pi_{\theta}(a_t \, | \, s_t) \cdot  \Psi_t \right] 
+++++
+
+Different policy gradient formulations are as below.
+
+. stem:[\Psi_t = \sum_{k=0}^\infty \gamma^k r_{k+1} = G_0]: Total reward of the trajectory.
+. stem:[\Psi_t = \sum_{t'=t}^\infty \gamma^{t'-t} r_{t'+1} = G_{t:\infty}]: Total reward following action stem:[a_t].
+. stem:[\Psi_t = \sum_{t'=t}^\infty \gamma^{t'-t} r_{t'+1} - b(s_{t'}) = G_{t:\infty} - b(s_t)]: Baseline version of the previous formula. This leads directly to the advantage function.
+. stem:[\Psi_t = Q^{\pi_{\theta}}(s_t, a_t)]: State action value function.
+. stem:[\Psi_t = A^{\pi_{\theta}}(s_t, a_t) = Q^{\pi_{\theta}}(s_t, a_t) - V^{\pi_{\theta}}(s_t)]: Advantage function.
+. stem:[\Psi_t = r_{t+1} +  \gamma V^{\pi_{\theta}}(s_{t+1})  - V^{\pi_{\theta}}(s_t)]: TD Residual.

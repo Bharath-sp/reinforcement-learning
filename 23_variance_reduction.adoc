@@ -172,7 +172,7 @@ This baseline value is a constant number, and can be calculated once we have the
 b_t =  \frac{1}{K} \sum_{i=1}^K G_{t:\infty}(\tau^{(i)})
 ++++
 +
-This baseline has to be calculated at every time step. It is not state-dependent but time step dependent.
+This baseline has to be calculated at every time step. It is not state-dependent but time step dependent. When we use this baseline with rewards-to-go, stem:[G_{t:\infty} - b_t], then stem:[G_{t:\infty}] is the rewards-to-go in the current episode and stem:[b_t] is the average rewards-to-go at that time step across stem:[K] trajectories.
 
 * Optimal baseline (minimum variance baseline):
 +

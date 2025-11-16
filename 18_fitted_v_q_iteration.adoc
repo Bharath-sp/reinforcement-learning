@@ -73,7 +73,7 @@ One of the advantages of TD methods over MC methods is that we can do online lea
 
 NOTE: In TD(0) algorithm, we go along the same trajectory.
 
-== Optimal Value Function - Control ==
+== Optimal Value Function - Control Algorithms ==
 Bellman optimality equation for stem:[V_*] is given as:
 
 [stem]
@@ -87,6 +87,8 @@ V_*(s) & \leftarrow \max_{a \in \mathcal{A}} \left[ \sum_{s' \in \mathcal{S}} \m
 ++++
 
 To get a sample estimate for transition stem:[(s,a,r,s')] for stem:[V_*], that is, a single input-output pair, we should do stem:[V(s) \approx \max_{a \in \mathcal{A}} [ r + \gamma V(s')]]. It is not always possible to know the outcome of all actions starting from stem:[s]; costly as well. Therefore, for model free control, we use approximators for stem:[Q] and not stem:[V].
+
+NOTE: There is no control algorithm in model-free settings to find stem:[V_*].
 
 === Fitted Q Iteration ===
 Bellman optimality equation for stem:[Q_*] is given as:

@@ -31,10 +31,10 @@ The expected loss from the network is given by
 
 [stem]
 ++++
-L(\phi_i) = \mathbb{E}_{(s,a,r,s') \in D} \left[Q_{\phi_i}(s,a) - r - \max_{a'} Q_{\phi'_i}(s',a') \right]^2
+L(\phi_i) = \mathbb{E}_{(s,a,r,s') \in D} \left[Q_{\phi_i}(s,a) - r - \gamma \max_{a'} Q_{\phi'_i}(s',a') \right]^2
 ++++
 
-* The second term in the target stem:[y = r + \max_{a'} Q_{\phi'_i}(s',a')] in the above loss function is computed using the target network.
+* The second term in the target stem:[y = r + \gamma \max_{a'} Q_{\phi'_i}(s',a')] in the above loss function is computed using the target network.
 
 * But when we do gradient descent, we update the original network, that is, the parameters stem:[\phi].
 
@@ -44,15 +44,44 @@ This way the target network is kept constant for a while (for stem:[C] steps). E
 
 image::.\images\dqn_algo.png[align='left', 700, 300]
 
-* stem:[Q] is the original network parameterized by stem:[\phi] and stem:[Q'] is the target network parameterized by stem:[\phi'].
-* After step 3, for some episodes, we just collect the transitions stem:[(s,a,r,s')] using a random policy and add it to the replay buffer stem:[D]. We don't do any learning at this stage. After the replay buffer is filled with enough transitions, we start the learning process (from step 4).
-* In step 8, we store the transition stem:[(s,a,r,s')] in the replay buffer stem:[D] (if the buffer is full, we discard the oldest transition).
-* In step 11, we compute the target stem:[y_i] for each transition in the mini-batch using the target network stem:[Q'].
-* In step 13, we perform the regression step with stem:[B] number of stem:[(s_i, y_i)] pairs, and update the weights of the original network stem:[Q].
+* stem:[Q] is the original network parameterized by stem:[\phi] and stem:[\hat{Q}] is the target network parameterized by stem:[\phi'].
+* After step 3, for some episodes, we just collect the transitions stem:[(s,a,r,s')] using a random policy and add it to the replay buffer stem:[D]. A behavior policy, typically stem:[\epsilon-] greedy, is used to select the action. That is, with probability stem:[\epsilon], a random action is selected, and with probability stem:[1-\epsilon], the action is chosen from the main network. We start with stem:[\epsilon=1].
++
+We don't do any learning at this stage. After the replay buffer is filled with enough transitions, we start the learning process (from step 4).
+* In step 8, we store the transition stem:[(s,a,r,s', \text{done})] in the replay buffer stem:[D] (if the buffer is full, we discard the oldest transition). stem:[\text{done} =1] if the episode terminates at stem:[s'].
+* We sample a mini-batch of data. In step 11, we compute the target stem:[y_i] for each transition in the mini-batch using the target network stem:[\hat{Q}].
++
+[stem]
+++++
+y = r + \gamma (1-\text{done}) \max_{a'} Q_{\phi'}(s',a')
+++++
+
+* Loss is computed
++
+[stem]
+++++
+L(\phi) = \frac{1}{2} (y- Q_{\phi}(s,a))^2
+++++
++
+And summed for stem:[B] transitions.
+
+* In step 13, we update the weights of the original network stem:[Q] using the gradient descent step.
++
+[stem]
+++++
+\begin{align*}
+\phi & \leftarrow \phi - \alpha (y- Q_{\phi}(s,a)) \left[ - \nabla_{\phi} Q_{\phi}(s,a) \right] \\
+\phi & \leftarrow \phi + \alpha (y- Q_{\phi}(s,a)) \nabla_{\phi} Q_{\phi}(s,a)  \\
+\end{align*}
+++++
++
+This is the deep-learning analogous of the tabular Q-learning update. This step updates the main network to better approximate the optimal action-value function stem:[Q_*].
 
 DQN is an online algorithm, as we keep updating the network weights after every step in the trajectory.
 
 NOTE: stem:[Q(s,a)] represents the expected reward for taking action stem:[a] at state stem:[s].
+
+DQN is an off-policy algorithm because the target uses the greedy policy while the data come from an exploratory policy.
 
 === Polyak Averaging ===
 Polyak Averaging is another way to update the Target Network. Instead of updating the target network abruptly after stem:[C] steps, we can do a soft update every step. At every step when we do gradient update, stem:[\phi] gets updated. We can also do the following update to the target network:
@@ -73,7 +102,7 @@ The DQN algorithm was tested on 49 Atari games, and it outperformed all previous
 
 IMPORTANT: The benchmark to test any supervised classification algorithm is the MNIST dataset. Similarly, the benchmark to test any RL algorithm is the Atari games.
 
-As there is no convergence guarantee for DQN, even after the training - after learning the (assumed) optimal Q function, we still prefer to have a slightly exploratory (optimal) policy (stem:[\epsilon-] greedy with stem:[\epsilon=0.01]) rather than a full greedy policy.
+DQN setting has no convergence guarantee. As there is no convergence guarantee for DQN, even after the training - after learning the (assumed) optimal Q function, we still prefer to have a slightly exploratory (optimal) policy (stem:[\epsilon-] greedy with stem:[\epsilon=0.01]) rather than a full greedy policy.
 
 *How learning takes place with DQN?*
 

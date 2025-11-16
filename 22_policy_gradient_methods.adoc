@@ -30,7 +30,7 @@ After several iterations, we settle down at a stem:[Q] function, which we assume
 \end{cases}
 ++++
 
-In the policy gradient methods, we directly parameterize the policy. That is, we have a function approximator (a neural network) to estimate the policy. The policy is a probability distribution over the action space given a state stem:[s]. As the neural network outputs the probability distribution, we say that the distribution is parameterized by stem:[\theta] (weights and biases of the policy network). That is, stem:[\theta] defines the shape of the probability distribution.
+With state-value functions Q, computing arg max over actions gets tricky when action space is large or continuous. So, in the policy gradient methods, we directly parameterize the policy. That is, we have a function approximator (a neural network) to estimate the policy. The policy is a probability distribution over the action space given a state stem:[s]. As the neural network outputs the probability distribution, we say that the distribution is parameterized by stem:[\theta] (weights and biases of the policy network). That is, stem:[\theta] defines the shape of the probability distribution.
 
 [stem]
 ++++
@@ -79,7 +79,7 @@ image::.\images\policy_based_rl_01.png[align='center', 400, 200]
 
 This works for both discrete and continuous action space settings.
 
-* If action space is discrete: the network outputs a vector of probabilities (using softmax).
+* If action space is discrete (but large): the network outputs a vector of probabilities (using softmax).
 +
 [stem]
 ++++
@@ -98,25 +98,29 @@ where stem:[f_{\theta}(s)_a] is the output from the network for action stem:[a],
 Then, we sample an action from this Gaussian distribution. This idea can be extended to any parameterized probability distribution (even multi-variable distribution).
 
 == Policy Optimization ==
+How will we search for a policy in the policy space? We should define a criterion function with which we can look for a policy.
+
 A policy stem:[\pi(\cdot)] is parameterized by parameter stem:[\theta] and denoted by stem:[\pi_{\theta}]. The performance (the value) of a policy stem:[\pi_{\theta}] is given by:
 
 [stem]
 ++++
-J(\theta) = V^{\pi_{\theta}}(s) = \mathbb{E}_{\pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s_0 \right]
+J(\theta) = V^{\pi_{\theta}}(s_0) = \mathbb{E}_{\pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s_0 \right]
 ++++
 
 which denotes the expected return when actions are sampled according to the policy stem:[\pi_{\theta}( a \, | \, s)].
 
 NOTE: We evaluate the policy from the start state stem:[S_0], not from any intermediate state. In general, the start state can come from a distribution.
 
-stem:[J(\theta)] can be used as the criterion function. Since we look for the optimal stem:[\theta] (the optimal weights and biases of the neural network), the criterion function is a function of only stem:[\theta]. As the policy is parameterized, if stem:[\theta] changes, the policy also changes. Our goal is to find the best policy in the policy space for the given MDP.
+stem:[J(\theta)] can be used as the criterion function. This is a "start-state" criterion because we are looking for a policy stem:[\pi_{\theta}] which maximizes stem:[V^{\pi_{\theta}}] of stem:[s_0] (the start state). Starting from the start state stem:[s_0], what is the policy that will fetch us the maximum expected total discounted sum of rewards? Our goal is to find the best policy in the policy space for the given MDP.
+
+Since the policy is parameterized by stem:[\theta] (the weights and biases of the neural network), if stem:[\theta] changes, the policy also changes. So, the criterion function is a function of only stem:[\theta]. We need to find that set of weights and biases of the neural network such that stem:[V^{\pi_{\theta}}(s_0)] is maximum.
 
 [stem]
 ++++
-\pi^*_{\theta} = \arg \max_{\pi_{\theta}} V^{\pi_{\theta}}(s) = \arg \max_{\pi_{\theta}} \mathbb{E}_{\pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s \right]
+\pi^*_{\theta} = \arg \max_{\pi_{\theta}} V^{\pi_{\theta}}(s_0) = \arg \max_{\pi_{\theta}} \mathbb{E}_{\pi_{\theta}} \left[ \sum_{t=0}^{\infty} \gamma^t r_{t+1} \, | \, S_0 = s_0 \right]
 ++++
 
-What is the policy that will roll out good trajectories from stem:[S_0]? In short, we are looking for stem:[\pi^*_{\theta}] in the space of stochastic policies by finding that set of stem:[\theta] that maximizes stem:[J(\theta)].
+In short, we are looking for stem:[\pi^*_{\theta}] in the space of stochastic policies by finding that set of stem:[\theta] that maximizes stem:[J(\theta)].
 
 Let stem:[J(\theta)] be the policy objective function. Policy gradient algorithms search for a local maximum in stem:[J(\theta)] by ascending the gradient of the objective function stem:[J(\theta)] w.r.t. parameters stem:[\theta]. This eventually turns out to be the gradient of the policy
 
@@ -128,7 +132,7 @@ Let stem:[J(\theta)] be the policy objective function. Policy gradient algorithm
 * stem:[\nabla_{\theta} J(\theta)] is the gradient of the function that measures the performance of the policy.
 * stem:[\alpha] is the step size parameter.
 
-NOTE: In Q-learning and DQN, the stem:[Q_*] was supposed to satisfy the Bellman optimality equation. So, we came up with a loss function based on the Bellman optimality equation. Here in the policy case, we need to optimize the value of the policy, so we consider stem:[J(\theta)] to build the loss function.
+NOTE: In Q-learning and DQN, we tried to find stem:[Q_*]. So, the criterion function is formed based on what condition the stem:[Q_*] should satisfy. The stem:[Q_*] function should satisfy the Bellman optimality equation. So, we came up with a loss function based on the Bellman optimality equation. Here we are looking for stem:[\pi_*] which should maximize stem:[V^{\pi_{\theta}}(s_0)].
 
 The gradient of the policy refers to the derivative of the log of the policy's action probabilities with respect to its parameters stem:[\theta]. It measures how changing the parameter stem:[\theta] changes the log probability of taking an action stem:[a] in a state stem:[s] — and hence, how we can adjust stem:[\theta] (thereby policy) to increase expected return stem:[J(\theta)].
 
@@ -274,6 +278,6 @@ The MLE gradient estimate, stem:[\nabla_{\theta} J_{MLE}(\theta)], (that is, the
 
 == Issues with Policy Gradient Estimate ==
 
-The policy gradient estimate, stem:[\nabla_{\theta} J(\theta)], is unbiased but has high variance because we are rolling out the whole trajectory which has a lot of stochastic components. We are just doing gradient descent in the MC based policy gradient algorithm. Upon the right selection of the learning rate, the algorithm is guaranteed to converge to a local optimum in the parameter stem:[\theta] space. (Note even this convergence guarantee wasn't there for DQN)
+The policy gradient estimate, stem:[\nabla_{\theta} J(\theta)], is unbiased but has high variance because we are rolling out the whole trajectory which has a lot of stochastic components. Here, in the MC based policy gradient algorithm, we are just doing gradient descent. Upon the right selection of the learning rate, the algorithm is guaranteed to converge to a local optimum in the parameter stem:[\theta] space. The convergence guarantees that come with stochastic gradient descent follows through the policy gradient settings. Note even this convergence guarantee wasn't there for DQN. So, policy gradient methods have better convergence property than DQN algorithms.
 
 But since the variance is high, it takes a lot of time to converge. Therefore, we need some variance reduction techniques in practice.

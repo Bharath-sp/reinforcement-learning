@@ -137,13 +137,13 @@ where the transitions are sampled from stem:[D] from an uniform distribution. No
 w_i = \left( \frac{1}{N} \cdot \frac{1}{P(i)} \right)^{\beta}
 ++++
 +
-The parameter stem:[\beta] is an annealing term used to control the phase of the learning. It is low stem:[(0.4 \text{ to } 0.8)] in the beginning of the training and tends to 1 towards the end of the training.
+stem:[N] is the number of transitions in the buffer. The parameter stem:[\beta] is an annealing term, which is annealed over time to gradually correct the sampling bias as learning progresses. It is low stem:[(0.4 \text{ to } 0.8)] in the beginning of the training and tends to 1 towards the end of the training.
 
 . The final loss term for the mini-batch is:
 +
 [stem]
 ++++
-L = \frac{1}{N} \sum_i w_i (\delta_i)^2
+L = \frac{1}{B} \sum_i w_i (\delta_i)^2
 ++++
 
 IMPORTANT: The optimal choices of stem:[\alpha] and stem:[\beta] during various phases of training depends on task at hand. We need to experiment and properly tune them.

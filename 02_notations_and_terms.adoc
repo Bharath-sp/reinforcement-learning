@@ -55,7 +55,7 @@ Assume there are stem:[n] states in total. State transition matrix stem:[\mathca
 CAUTION: The number of states stem:[n] can be (discrete) infinite as well.
 
 === Markov Chain ===
-A Markov chain or Markov process is a particular type of stochastic process stem:[\{s_t\}_{t \in T}] in which every element (states) of the process satisfies the Markov property. It is represented by tuple stem:[<\mathcal{S}, \mathcal{P}>], where stem:[\mathcal{S}] denotes the set of states and stem:[\mathcal{P}] denotes the state transition probability.
+A Markov chain or Markov process is a particular type of stochastic process stem:[\{S_t\}_{t \in T}] in which every element (states) of the process satisfies the Markov property. It is represented by tuple stem:[<\mathcal{S}, \mathcal{P}>], where stem:[\mathcal{S}] denotes the set of states and stem:[\mathcal{P}] denotes the state transition probability. The Markov chain describes a stochastic process stem:[\{ S_t \}_{t=0}^{\infty}] where stem:[S_t] is a random variable representing the state at time step stem:[t]. The process starts from an initial state stem:[S_0 = s_0] and evolves according to the transition probabilities defined by stem:[\mathcal{P}].
 
 *Example 01*: A simple two-state Markov chain is
 
