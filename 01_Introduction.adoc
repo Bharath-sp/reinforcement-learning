@@ -62,7 +62,7 @@ The challenges in RL problems are:
 
 We look for challenges such as delayed feedback, credit assignment problem, stochastic environment, definition of reward function, data collection problem, and then appropriately structure the solution.
 
-NOTE: We deal with only single agent setting RL problems.
+NOTE: We deal with only single agent setting RL problems. The opponent will be hardcoded, and it will be a part of the environment. It doesn't learn anything; plays a fixed strategy.
 
 == Historical Notes ==
 

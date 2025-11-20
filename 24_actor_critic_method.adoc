@@ -243,4 +243,4 @@ Different policy gradient formulations are as below.
 . stem:[\Psi_t = \sum_{t'=t}^\infty \gamma^{t'-t} r_{t'+1} - b(s_{t'}) = G_{t:\infty} - b(s_t)]: Baseline version of the previous formula. This leads directly to the advantage function.
 . stem:[\Psi_t = Q^{\pi_{\theta}}(s_t, a_t)]: State action value function.
 . stem:[\Psi_t = A^{\pi_{\theta}}(s_t, a_t) = Q^{\pi_{\theta}}(s_t, a_t) - V^{\pi_{\theta}}(s_t)]: Advantage function.
-. stem:[\Psi_t = r_{t+1} +  \gamma V^{\pi_{\theta}}(s_{t+1})  - V^{\pi_{\theta}}(s_t)]: TD Residual.
+. stem:[\Psi_t = r_{t+1} +  \gamma V^{\pi_{\theta}}(s_{t+1})  - V^{\pi_{\theta}}(s_t)]: One-step TD Residual.

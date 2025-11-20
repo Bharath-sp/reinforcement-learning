@@ -94,7 +94,7 @@ $$
 \end{align*}
 $$
 
-* $ \pi_{\theta}(a_t \, | \, s_t)$ is the actor and $Q^{\pi_{\theta}}(s_t, a_t)$ is the critic.
+* $\pi_{\theta}(a_t \, | \, s_t)$ is the actor and $Q^{\pi_{\theta}}(s_t, a_t)$ is the critic.
 
 NOTE: For $J_{avR}(\theta)$, we may have to scale it appropriately. The theorem has the word stochastic because the policy $\pi_{\theta}$ is stochastic.
 
